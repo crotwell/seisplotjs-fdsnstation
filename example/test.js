@@ -20,10 +20,12 @@ staQuery.queryChannels().then(function(staml) {
     table = wp.d3.select("div.stations")
       .append("table");
   }
-  var tr = table
+  var tableData = table
     .selectAll("tr")
-    .data(staml[0].stations())
-    .enter()
+    .data(staml[0].stations(), function(d) { return d.codes();});
+
+  tableData.exit().remove();
+  var tr = tableData.enter()
     .append("tr");
 
   tr.append("td")
@@ -60,10 +62,11 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         table = wp.d3.select("div.channels")
           .append("table");
       }
-      var tr = table
+      var tableData = table
         .selectAll("tr")
-        .data(d.channels())
-        .enter()
+        .data(d.channels(), function(d) { return d.codes();});
+      tableData.exit().remove();
+      var tr = tableData.enter()
         .append("tr");
 
       tr.append("td")
