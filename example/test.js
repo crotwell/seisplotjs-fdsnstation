@@ -12,40 +12,89 @@ wp.d3.select("div.url")
     .append("p")
     .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_CHANNEL));
 staQuery.queryChannels().then(function(staml) {
-console.log("got staml :"+staml.length);
-console.log("stations length :"+staml[0].stations.length);
-  wp.d3.select("div.stations")
-    .selectAll("p")
+  console.log("got staml :"+staml.length);
+  console.log("stations length :"+staml[0].stations.length);
+  var table = wp.d3.select("div.stations")
+    .select("table");
+  if ( table.empty()) {
+    table = wp.d3.select("div.stations")
+      .append("table");
+  }
+  var tr = table
+    .selectAll("tr")
     .data(staml[0].stations())
-    .enter() 
-    .append("p")
+    .enter()
+    .append("tr");
+
+  tr.append("td")
     .text(function(d) {
-console.log("station startDate: "+d.startDate());
-      return "station: "
-          +d.stationCode()+" "
-          +d.startDate().toISOString()+" "
-          +d.restrictedStatus()+" "
-          +"("+d.latitude()+", "+d.longitude()+") "
-          +d.name();
-    })
-    .on("click", function(d){
+      return d.codes();
+    });
+  tr.append("td")
+    .text(function(d) {
+      return d.startDate().toISOString();
+    });
+  tr.append("td")
+    .text(function(d) {
+      return "("+d.latitude()+", "+d.longitude()+")";
+    });
+  tr.append("td")
+    .text(function(d) {
+      return (d.elevation())+" m ";
+    });
+  tr.append("td")
+    .text(function(d) {
+      return d.restrictedStatus()+" ";
+    });
+  tr.append("td")
+    .text(function(d) {
+      return d.name()+" ";
+    });
+
+    tr.on("click", function(d){
 console.log("click "+d.network().networkCode()+"."+d.stationCode());
-      wp.d3.select("div.channels")
-        .selectAll("p")
-        .remove();
-      wp.d3.select("div.channels")
-        .selectAll("p")
+
+      var table = wp.d3.select("div.channels")
+        .select("table");
+      if ( table.empty()) {
+        table = wp.d3.select("div.channels")
+          .append("table");
+      }
+      var tr = table
+        .selectAll("tr")
         .data(d.channels())
         .enter()
-        .append("p")
+        .append("tr");
+
+      tr.append("td")
         .text(function(d) {
-          return "channel: "
-              +d.locationId()+"."+d.channelCode()+" "
-              +d.startDate().toISOString()+" "
-              +"("+d.latitude()+", "+d.longitude()+") "
-              +(d.depth()/1000)+"km "
-              +d.azimuth()+"/"+d.dip();
+          return d.codes();
         });
+      tr.append("td")
+        .text(function(d) {
+          return d.startDate().toISOString();
+        });
+      tr.append("td")
+        .text(function(d) {
+          return "("+d.latitude()+", "+d.longitude()+")";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return (d.elevation())+" m ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return (d.depth())+" m ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return "("+d.azimuth()+", "+d.dip()+")";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return d.restrictedStatus()+" ";
+        });
+
       // plotSeismograms(wp.d3.select("div.seismograms"),
       //                 "CO", "JSC", "00", "HHZ", d);
     });
