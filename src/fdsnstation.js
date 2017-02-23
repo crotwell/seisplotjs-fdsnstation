@@ -94,6 +94,8 @@ console.log("convert to station");
         .textContent))
       .longitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
         .textContent))
+      .elevation(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Elevation').item(0)
+        .textContent))
       .name(xml.getElementsByTagNameNS(STAML_NS, 'Site').item(0)
         .getElementsByTagNameNS(STAML_NS, 'Name').item(0)
         .textContent);
@@ -236,6 +238,9 @@ export class Network {
   stations(value) {
     return arguments.length ? (this._stations = value, this) : this._stations;
   }
+  codes() {
+    return this.networkCode();
+  }
 }
 
 export class Station {
@@ -267,8 +272,14 @@ export class Station {
   longitude(value) {
     return arguments.length ? (this._longitude = value, this) : this._longitude;
   }
+  elevation(value) {
+    return arguments.length ? (this._elevation = value, this) : this._elevation;
+  }
   channels(value) {
     return arguments.length ? (this._channels = value, this) : this._channels;
+  }
+  codes() {
+    return this.network().codes()+"."+this.stationCode();
   }
 }
 
@@ -316,5 +327,8 @@ export class Channel {
   }
   sampleRate(value) {
     return arguments.length ? (this._sampleRate = value, this) : this._sampleRate;
+  }
+  codes() {
+    return this.station().codes()+"."+this.locationId()+"."+this.channelCode();
   }
 }
