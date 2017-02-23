@@ -66,37 +66,65 @@ export class StationQuery {
   maxLon(value) {
     return arguments.length ? (this._maxLon = value, this) : this._maxLon;
   }
+
   convertToNetwork(xml) {
 console.log("convertToNetwork");
-    let out = {};
-    out.code = xml.getAttribute("code");
-    out.startDate = this.toDateUTC(xml.getAttribute("startDate"));
-    out.endDate = this.toDateUTC(xml.getAttribute("endDate"));
-    out.restrictedStatus = xml.getAttribute("restrictedStatus");
-    out.description = xml.getElementsByTagNameNS(STAML_NS, 'Description').item(0)
-        .textContent;
+    let out = new Network(xml.getAttribute("code"))
+      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
+      .restrictedStatus(xml.getAttribute("restrictedStatus"))
+      .description(xml.getElementsByTagNameNS(STAML_NS, 'Description').item(0)
+        .textContent);
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
 console.log(out.code+" found "+staArray.length+" stations"); 
-        out.stations = [];
-        for (let i=0; i<staArray.length; i++) {
-          out.stations[i] = this.convertToStation(staArray.item(i));
-        }
+    let stations = [];
+    for (let i=0; i<staArray.length; i++) {
+      stations.push(this.convertToStation(out, staArray.item(i)));
+    }
+    out.stations(stations);
     return out;
   }
-  convertToStation(xml) {
+  convertToStation(network, xml) {
 console.log("convert to station");
-    let out = {};
-    out.code = xml.getAttribute("code");
-    out.startDate = this.toDateUTC(xml.getAttribute("startDate"));
-    out.endDate = this.toDateUTC(xml.getAttribute("endDate"));
-    out.restrictedStatus = xml.getAttribute("restrictedStatus");
-    out.latitude = parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Latitude').item(0)
-        .textContent);
-    out.longitude = parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
-        .textContent);
-    out.name = xml.getElementsByTagNameNS(STAML_NS, 'Site').item(0)
+    let out = new Station(network, xml.getAttribute("code"))
+      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
+      .restrictedStatus(xml.getAttribute("restrictedStatus"))
+      .latitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Latitude').item(0)
+        .textContent))
+      .longitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
+        .textContent))
+      .name(xml.getElementsByTagNameNS(STAML_NS, 'Site').item(0)
         .getElementsByTagNameNS(STAML_NS, 'Name').item(0)
-        .textContent;
+        .textContent);
+    let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
+console.log(out.code+" found "+chanArray.length+" channels"); 
+    let channels = [];
+    for (let i=0; i<chanArray.length; i++) {
+      channels.push(this.convertToChannel(out, chanArray.item(i)));
+    }
+    out.channels(channels);
+    return out;
+  }
+  convertToChannel(station, xml) {
+    let out = new Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
+      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
+      .restrictedStatus(xml.getAttribute("restrictedStatus"))
+      .latitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Latitude').item(0)
+        .textContent))
+      .longitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
+        .textContent))
+      .elevation(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Elevation').item(0)
+        .textContent))
+      .depth(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Depth').item(0)
+        .textContent))
+      .azimuth(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Azimuth').item(0)
+        .textContent))
+      .dip(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Dip').item(0)
+        .textContent))
+      .sampleRate(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'SampleRate').item(0)
+        .textContent));
     return out;
   }
 
@@ -182,5 +210,111 @@ console.log("resolve xml: ");
   toIsoWoZ(date) {
     let out = date.toISOString();
     return out.substring(0, out.length-1);
+  }
+}
+
+export class Network {
+  constructor(networkCode) {
+    this.networkCode(networkCode);
+    this._stations = [];
+  }
+  networkCode(value) {
+    return arguments.length ? (this._networkCode = value, this) : this._networkCode;
+  }
+  startDate(value) {
+    return arguments.length ? (this._startDate = value, this) : this._startDate;
+  }
+  endDate(value) {
+    return arguments.length ? (this._endDate = value, this) : this._endDate;
+  }
+  restrictedStatus(value) {
+    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
+  }
+  description(value) {
+    return arguments.length ? (this._description = value, this) : this._description;
+  }
+  stations(value) {
+    return arguments.length ? (this._stations = value, this) : this._stations;
+  }
+}
+
+export class Station {
+  constructor(network, stationCode) {
+    this._network = network;
+    this._stationCode = stationCode;
+  }
+  network(value) {
+    return arguments.length ? (this._network = value, this) : this._network;
+  }
+  stationCode(value) {
+    return arguments.length ? (this._stationCode = value, this) : this._stationCode;
+  }
+  startDate(value) {
+    return arguments.length ? (this._startDate = value, this) : this._startDate;
+  }
+  endDate(value) {
+    return arguments.length ? (this._endDate = value, this) : this._endDate;
+  }
+  restrictedStatus(value) {
+    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
+  }
+  name(value) {
+    return arguments.length ? (this._name = value, this) : this._name;
+  }
+  latitude(value) {
+    return arguments.length ? (this._latitude = value, this) : this._latitude;
+  }
+  longitude(value) {
+    return arguments.length ? (this._longitude = value, this) : this._longitude;
+  }
+  channels(value) {
+    return arguments.length ? (this._channels = value, this) : this._channels;
+  }
+}
+
+export class Channel {
+  constructor(station, channelCode, locationId) {
+    this._station = station;
+    this._channelCode = channelCode;
+    this._locationId = locationId;
+  }
+  station(value) {
+    return arguments.length ? (this._station = value, this) : this._station;
+  }
+  channelCode(value) {
+    return arguments.length ? (this._channelCode = value, this) : this._channelCode;
+  }
+  locationId(value) {
+    return arguments.length ? (this._locationId = value, this) : this._locationId;
+  }
+  startDate(value) {
+    return arguments.length ? (this._startDate = value, this) : this._startDate;
+  }
+  endDate(value) {
+    return arguments.length ? (this._endDate = value, this) : this._endDate;
+  }
+  restrictedStatus(value) {
+    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
+  }
+  latitude(value) {
+    return arguments.length ? (this._latitude = value, this) : this._latitude;
+  }
+  longitude(value) {
+    return arguments.length ? (this._longitude = value, this) : this._longitude;
+  }
+  elevation(value) {
+    return arguments.length ? (this._elevation = value, this) : this._elevation;
+  }
+  depth(value) {
+    return arguments.length ? (this._depth = value, this) : this._depth;
+  }
+  azimuth(value) {
+    return arguments.length ? (this._azimuth = value, this) : this._azimuth;
+  }
+  dip(value) {
+    return arguments.length ? (this._dip = value, this) : this._dip;
+  }
+  sampleRate(value) {
+    return arguments.length ? (this._sampleRate = value, this) : this._sampleRate;
   }
 }

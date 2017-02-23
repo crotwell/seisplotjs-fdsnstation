@@ -10,42 +10,41 @@ var staQuery = new fdsnstation.StationQuery()
   .networkCode("CO");
 wp.d3.select("div.url")
     .append("p")
-    .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_STATION));
-staQuery.queryStations().then(function(staml) {
+    .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_CHANNEL));
+staQuery.queryChannels().then(function(staml) {
 console.log("got staml :"+staml.length);
 console.log("stations length :"+staml[0].stations.length);
   wp.d3.select("div.stations")
     .selectAll("p")
-    .data(staml[0].stations)
+    .data(staml[0].stations())
     .enter() 
     .append("p")
     .text(function(d) {
-console.log("station startDate: "+d.startDate);
+console.log("station startDate: "+d.startDate());
       return "station: "
-          +d.code+" "
-          +d.startDate.toISOString()+" "
-          +d.restrictedStatus+" "
-          +"("+d.latitude+", "+d.longitude+") "
-          +d.name;
+          +d.stationCode()+" "
+          +d.startDate().toISOString()+" "
+          +d.restrictedStatus()+" "
+          +"("+d.latitude()+", "+d.longitude()+") "
+          +d.name();
     })
     .on("click", function(d){
-console.log("click "+d.time);
-      wp.d3.select("div.seismograms")
+console.log("click "+d.network().networkCode()+"."+d.stationCode());
+      wp.d3.select("div.channels")
         .selectAll("p")
         .remove();
-      wp.d3.select("div.seismograms")
+      wp.d3.select("div.channels")
         .selectAll("p")
-        .data([d])
+        .data(d.channels())
         .enter()
         .append("p")
         .text(function(d) {
-          return "quake: "
-              +d.time.toISOString()+" "
-              +d.magnitude.value+" "
-              +d.magnitude.type+" "
-              +"("+d.latitude+", "+d.longitude+") "
-              +(d.depth/1000)+"km "
-              +d.description;
+          return "channel: "
+              +d.locationId()+"."+d.channelCode()+" "
+              +d.startDate().toISOString()+" "
+              +"("+d.latitude()+", "+d.longitude()+") "
+              +(d.depth()/1000)+"km "
+              +d.azimuth()+"/"+d.dip();
         });
       // plotSeismograms(wp.d3.select("div.seismograms"),
       //                 "CO", "JSC", "00", "HHZ", d);
