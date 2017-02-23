@@ -19,8 +19,16 @@ staQuery.queryChannels().then(function(staml) {
   if ( table.empty()) {
     table = wp.d3.select("div.stations")
       .append("table");
+    var th = table.append("thead").append("tr");
+    th.append("th").text("Code");
+    th.append("th").text("Start");
+    th.append("th").text("Lat,Lon");
+    th.append("th").text("Elev");
+    th.append("th").text("Restrict");
+    th.append("th").text("Name");
+    table.append("tbody");
   }
-  var tableData = table
+  var tableData = table.select("tbody")
     .selectAll("tr")
     .data(staml[0].stations(), function(d) { return d.codes();});
 
@@ -61,8 +69,17 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
       if ( table.empty()) {
         table = wp.d3.select("div.channels")
           .append("table");
+        var th = table.append("thead").append("tr");
+        th.append("th").text("Code");
+        th.append("th").text("Start");
+        th.append("th").text("Lat,Lon");
+        th.append("th").text("Elev");
+        th.append("th").text("Depth");
+        th.append("th").text("Az/Dip");
+        th.append("th").text("Restrict");
+        table.append("tbody");
       }
-      var tableData = table
+      var tableData = table.select("tbody")
         .selectAll("tr")
         .data(d.channels(), function(d) { return d.codes();});
       tableData.exit().remove();
