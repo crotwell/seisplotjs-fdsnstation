@@ -10,8 +10,8 @@ var staQuery = new fdsnstation.StationQuery()
   .networkCode("CO");
 wp.d3.select("div.url")
     .append("p")
-    .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_CHANNEL));
-staQuery.queryChannels().then(function(staml) {
+    .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_STATION));
+staQuery.queryStations().then(function(staml) {
   console.log("got staml :"+staml.length);
   console.log("stations length :"+staml[0].stations.length);
   var table = wp.d3.select("div.stations")
@@ -63,6 +63,17 @@ staQuery.queryChannels().then(function(staml) {
 
     tr.on("click", function(d){
 console.log("click "+d.network().networkCode()+"."+d.stationCode());
+      var chanQuery = new fdsnstation.StationQuery()
+       .networkCode(d.network().networkCode())
+       .stationCode(d.stationCode());
+      var chanUrlP = wp.d3.select("div.chanurl")
+          .select("p");
+      if (chanUrlP.empty()) {
+        chanUrlP = wp.d3.select("div.chanurl")
+          .append("p");
+      }
+      chanUrlP.text("URL: "+chanQuery.formURL(fdsnstation.LEVEL_CHANNEL));
+      chanQuery.queryChannels().then(function(staml) {
 
       var table = wp.d3.select("div.channels")
         .select("table");
@@ -81,7 +92,7 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
       }
       var tableData = table.select("tbody")
         .selectAll("tr")
-        .data(d.channels(), function(d) { return d.codes();});
+        .data(staml[0].stations()[0].channels(), function(d) { return d.codes()+d.startDate();});
       tableData.exit().remove();
       var tr = tableData.enter()
         .append("tr");
@@ -114,9 +125,8 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         .text(function(d) {
           return d.restrictedStatus()+" ";
         });
+        });
 
-      // plotSeismograms(wp.d3.select("div.seismograms"),
-      //                 "CO", "JSC", "00", "HHZ", d);
     });
     
 })
