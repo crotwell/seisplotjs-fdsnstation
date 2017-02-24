@@ -5,7 +5,9 @@ RSVP.on('error', function(reason) {
   console.assert(false, reason);
 });
 
-export { RSVP };
+import * as model from 'seisplotjs-model';
+
+export { RSVP, model };
 
 export const LEVEL_NETWORK = 'network';
 export const LEVEL_STATION = 'station';
@@ -69,12 +71,11 @@ export class StationQuery {
 
   convertToNetwork(xml) {
 console.log("convertToNetwork");
-    let out = new Network(xml.getAttribute("code"))
+    let out = new model.Network(xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
       .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .description(xml.getElementsByTagNameNS(STAML_NS, 'Description').item(0)
-        .textContent);
+      .description(this._grabFirstElText(xml, 'Description'));
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
 console.log(out.code+" found "+staArray.length+" stations"); 
     let stations = [];
@@ -85,20 +86,15 @@ console.log(out.code+" found "+staArray.length+" stations");
     return out;
   }
   convertToStation(network, xml) {
-console.log("convert to station");
-    let out = new Station(network, xml.getAttribute("code"))
+console.log("convert to station "+xml.getAttribute("code"));
+    let out = new model.Station(network, xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
       .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .latitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Latitude').item(0)
-        .textContent))
-      .longitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
-        .textContent))
-      .elevation(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Elevation').item(0)
-        .textContent))
-      .name(xml.getElementsByTagNameNS(STAML_NS, 'Site').item(0)
-        .getElementsByTagNameNS(STAML_NS, 'Name').item(0)
-        .textContent);
+      .latitude(this._grabFirstElFloat(xml, 'Latitude'))
+      .longitude(this._grabFirstElFloat(xml, 'Longitude'))
+      .elevation(this._grabFirstElFloat(xml, 'Elevation'))
+      .name(this._grabFirstElText(this._grabFirstEl(xml, 'Site'), 'Name'));
     let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
 console.log(out.code+" found "+chanArray.length+" channels"); 
     let channels = [];
@@ -109,25 +105,38 @@ console.log(out.code+" found "+chanArray.length+" channels");
     return out;
   }
   convertToChannel(station, xml) {
-    let out = new Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
+    let out = new model.Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
       .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .latitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Latitude').item(0)
-        .textContent))
-      .longitude(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Longitude').item(0)
-        .textContent))
-      .elevation(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Elevation').item(0)
-        .textContent))
-      .depth(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Depth').item(0)
-        .textContent))
-      .azimuth(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Azimuth').item(0)
-        .textContent))
-      .dip(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'Dip').item(0)
-        .textContent))
-      .sampleRate(parseFloat(xml.getElementsByTagNameNS(STAML_NS, 'SampleRate').item(0)
-        .textContent));
+      .latitude(this._grabFirstElFloat(xml, 'Latitude'))
+      .longitude(this._grabFirstElFloat(xml, 'Longitude'))
+      .elevation(this._grabFirstElFloat(xml, 'Elevation'))
+      .depth(this._grabFirstElFloat(xml, 'Depth'))
+      .azimuth(this._grabFirstElFloat(xml, 'Azimuth'))
+      .dip(this._grabFirstElFloat(xml, 'Dip'))
+      .sampleRate(this._grabFirstElFloat(xml, 'SampleRate'));
+    let response = xml.getElementsByTagNameNS(STAML_NS, 'Response');
+if (response == null) {console.log("Response is null");}
+    console.log("Response: "+response.length);
+    let inst = response.item(0).getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
+console.log("Inst: "+inst.length);
+console.log("Inst 0: "+inst.item(0));
+if (inst.item(0) == null) {
+console.log("Inst.item(0) is null");
+} else {
+console.log(" instrumentSensitivity for "+station.codes());
+      out.instrumentSensitivity(this.convertToInstrumentSensitivity(this._grabFirstEl(this._grabFirstEl(xml, 'Response'), 'InstrumentSensitivity')));
+}
     return out;
+  }
+
+  convertToInstrumentSensitivity(xml) {
+    let sensitivity = this._grabFirstElFloat(xml, 'Value');
+    let frequency = this._grabFirstElFloat(xml, 'Frequency');
+    let inputUnits = this._grabFirstElText(this._grabFirstEl(xml, 'InputUnits'), 'Name');
+    let outputUnits = this._grabFirstElText(this._grabFirstEl(xml, 'OutputUnits'), 'Name');
+    return new model.InstrumentSensitivity(sensitivity, frequency, inputUnits, outputUnits);
   }
 
   queryNetworks() {
@@ -213,122 +222,31 @@ console.log("resolve xml: ");
     let out = date.toISOString();
     return out.substring(0, out.length-1);
   }
-}
 
-export class Network {
-  constructor(networkCode) {
-    this.networkCode(networkCode);
-    this._stations = [];
+  _grabFirstEl(xml, tagName) {
+    if ( ! xml) { return null;}
+    let out = xml.getElementsByTagNameNS(STAML_NS, tagName);
+    if (out && out.length > 0) {
+      return out.item(0);
+    } else {
+      return null;
+    }
   }
-  networkCode(value) {
-    return arguments.length ? (this._networkCode = value, this) : this._networkCode;
+
+  _grabFirstElText(xml, tagName) {
+    let out = this._grabFirstEl(xml, tagName);
+    if (out) {
+      out = out.textContent;
+    }
+    return out;
   }
-  startDate(value) {
-    return arguments.length ? (this._startDate = value, this) : this._startDate;
-  }
-  endDate(value) {
-    return arguments.length ? (this._endDate = value, this) : this._endDate;
-  }
-  restrictedStatus(value) {
-    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
-  }
-  description(value) {
-    return arguments.length ? (this._description = value, this) : this._description;
-  }
-  stations(value) {
-    return arguments.length ? (this._stations = value, this) : this._stations;
-  }
-  codes() {
-    return this.networkCode();
+
+  _grabFirstElFloat(xml, tagName) {
+    let out = this._grabFirstElText(xml, tagName);
+    if (out) {
+      out = parseFloat(out); 
+    }
+    return out;
   }
 }
 
-export class Station {
-  constructor(network, stationCode) {
-    this._network = network;
-    this._stationCode = stationCode;
-  }
-  network(value) {
-    return arguments.length ? (this._network = value, this) : this._network;
-  }
-  stationCode(value) {
-    return arguments.length ? (this._stationCode = value, this) : this._stationCode;
-  }
-  startDate(value) {
-    return arguments.length ? (this._startDate = value, this) : this._startDate;
-  }
-  endDate(value) {
-    return arguments.length ? (this._endDate = value, this) : this._endDate;
-  }
-  restrictedStatus(value) {
-    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
-  }
-  name(value) {
-    return arguments.length ? (this._name = value, this) : this._name;
-  }
-  latitude(value) {
-    return arguments.length ? (this._latitude = value, this) : this._latitude;
-  }
-  longitude(value) {
-    return arguments.length ? (this._longitude = value, this) : this._longitude;
-  }
-  elevation(value) {
-    return arguments.length ? (this._elevation = value, this) : this._elevation;
-  }
-  channels(value) {
-    return arguments.length ? (this._channels = value, this) : this._channels;
-  }
-  codes() {
-    return this.network().codes()+"."+this.stationCode();
-  }
-}
-
-export class Channel {
-  constructor(station, channelCode, locationId) {
-    this._station = station;
-    this._channelCode = channelCode;
-    this._locationId = locationId;
-  }
-  station(value) {
-    return arguments.length ? (this._station = value, this) : this._station;
-  }
-  channelCode(value) {
-    return arguments.length ? (this._channelCode = value, this) : this._channelCode;
-  }
-  locationId(value) {
-    return arguments.length ? (this._locationId = value, this) : this._locationId;
-  }
-  startDate(value) {
-    return arguments.length ? (this._startDate = value, this) : this._startDate;
-  }
-  endDate(value) {
-    return arguments.length ? (this._endDate = value, this) : this._endDate;
-  }
-  restrictedStatus(value) {
-    return arguments.length ? (this._restrictedStatus = value, this) : this._restrictedStatus;
-  }
-  latitude(value) {
-    return arguments.length ? (this._latitude = value, this) : this._latitude;
-  }
-  longitude(value) {
-    return arguments.length ? (this._longitude = value, this) : this._longitude;
-  }
-  elevation(value) {
-    return arguments.length ? (this._elevation = value, this) : this._elevation;
-  }
-  depth(value) {
-    return arguments.length ? (this._depth = value, this) : this._depth;
-  }
-  azimuth(value) {
-    return arguments.length ? (this._azimuth = value, this) : this._azimuth;
-  }
-  dip(value) {
-    return arguments.length ? (this._dip = value, this) : this._dip;
-  }
-  sampleRate(value) {
-    return arguments.length ? (this._sampleRate = value, this) : this._sampleRate;
-  }
-  codes() {
-    return this.station().codes()+"."+this.locationId()+"."+this.channelCode();
-  }
-}
