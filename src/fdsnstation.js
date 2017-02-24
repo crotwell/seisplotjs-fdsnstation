@@ -209,6 +209,9 @@ console.log("resolve xml: ");
     return url.substr(0, url.length-1); // zap last & or ?
   }
 
+  // these are similar methods as in seisplotjs-fdsnevent
+  // duplicate here to avoid dependency and diff NS, yes that is dumb...
+
   toDateUTC(str) {
     if (! str.endsWith('Z')) {
       str = str + 'Z';
