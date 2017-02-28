@@ -1,2 +1,4 @@
 lib
 node_modules
+seisplotjs_fdsnstation_*_standalone.js
+example/seisplotjs_*_standalone.js
