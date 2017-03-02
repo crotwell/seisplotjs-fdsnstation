@@ -70,14 +70,12 @@ export class StationQuery {
   }
 
   convertToNetwork(xml) {
-console.log("convertToNetwork");
     let out = new model.Network(xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
       .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .description(this._grabFirstElText(xml, 'Description'));
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
-console.log(out.code+" found "+staArray.length+" stations"); 
     let stations = [];
     for (let i=0; i<staArray.length; i++) {
       stations.push(this.convertToStation(out, staArray.item(i)));
@@ -86,7 +84,6 @@ console.log(out.code+" found "+staArray.length+" stations");
     return out;
   }
   convertToStation(network, xml) {
-console.log("convert to station "+xml.getAttribute("code"));
     let out = new model.Station(network, xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
       .endDate(this.toDateUTC(xml.getAttribute("endDate")))
@@ -96,7 +93,6 @@ console.log("convert to station "+xml.getAttribute("code"));
       .elevation(this._grabFirstElFloat(xml, 'Elevation'))
       .name(this._grabFirstElText(this._grabFirstEl(xml, 'Site'), 'Name'));
     let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
-console.log(out.code+" found "+chanArray.length+" channels"); 
     let channels = [];
     for (let i=0; i<chanArray.length; i++) {
       channels.push(this.convertToChannel(out, chanArray.item(i)));
@@ -117,17 +113,10 @@ console.log(out.code+" found "+chanArray.length+" channels");
       .dip(this._grabFirstElFloat(xml, 'Dip'))
       .sampleRate(this._grabFirstElFloat(xml, 'SampleRate'));
     let response = xml.getElementsByTagNameNS(STAML_NS, 'Response');
-if (response == null) {console.log("Response is null");}
-    console.log("Response: "+response.length);
     let inst = response.item(0).getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
-console.log("Inst: "+inst.length);
-console.log("Inst 0: "+inst.item(0));
-if (inst.item(0) == null) {
-console.log("Inst.item(0) is null");
-} else {
-console.log(" instrumentSensitivity for "+station.codes());
+    if (inst && inst.item(0)) {
       out.instrumentSensitivity(this.convertToInstrumentSensitivity(this._grabFirstEl(this._grabFirstEl(xml, 'Response'), 'InstrumentSensitivity')));
-}
+    }
     return out;
   }
 
@@ -155,15 +144,12 @@ console.log(" instrumentSensitivity for "+station.codes());
   query(level) {
     let mythis = this;
     return this.queryRawXml(level).then(function(rawXml) {
-console.log("in query then");
         let top = rawXml.documentElement;
         let netArray = top.getElementsByTagNameNS(STAML_NS, "Network");
-console.log("found "+netArray.length+" nets");
         let out = [];
         for (let i=0; i<netArray.length; i++) {
           out[i] = mythis.convertToNetwork(netArray.item(i));
         }
-console.log("convert to networks promise resolve: "+out.length);
         return out;
     });
   }
@@ -183,7 +169,6 @@ console.log("convert to networks promise resolve: "+out.length);
       function handler() {
         if (this.readyState === this.DONE) {
           if (this.status === 200) { 
-console.log("resolve xml: ");
             resolve(this.responseXML); }
           else { reject(this); }
         }
