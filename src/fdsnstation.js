@@ -72,9 +72,11 @@ export class StationQuery {
   convertToNetwork(xml) {
     let out = new model.Network(xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
-      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .description(this._grabFirstElText(xml, 'Description'));
+    if (xml.getAttribute("endDate")) {
+      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+    }
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
     let stations = [];
     for (let i=0; i<staArray.length; i++) {
@@ -86,12 +88,14 @@ export class StationQuery {
   convertToStation(network, xml) {
     let out = new model.Station(network, xml.getAttribute("code"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
-      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .latitude(this._grabFirstElFloat(xml, 'Latitude'))
       .longitude(this._grabFirstElFloat(xml, 'Longitude'))
       .elevation(this._grabFirstElFloat(xml, 'Elevation'))
       .name(this._grabFirstElText(this._grabFirstEl(xml, 'Site'), 'Name'));
+    if (xml.getAttribute("endDate")) {
+      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+    }
     let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
     let channels = [];
     for (let i=0; i<chanArray.length; i++) {
@@ -103,7 +107,6 @@ export class StationQuery {
   convertToChannel(station, xml) {
     let out = new model.Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
       .startDate(this.toDateUTC(xml.getAttribute("startDate")))
-      .endDate(this.toDateUTC(xml.getAttribute("endDate")))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .latitude(this._grabFirstElFloat(xml, 'Latitude'))
       .longitude(this._grabFirstElFloat(xml, 'Longitude'))
@@ -112,6 +115,9 @@ export class StationQuery {
       .azimuth(this._grabFirstElFloat(xml, 'Azimuth'))
       .dip(this._grabFirstElFloat(xml, 'Dip'))
       .sampleRate(this._grabFirstElFloat(xml, 'SampleRate'));
+    if (xml.getAttribute("endDate")) {
+      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+    }
     let response = xml.getElementsByTagNameNS(STAML_NS, 'Response');
     let inst = response.item(0).getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
     if (inst && inst.item(0)) {
@@ -177,9 +183,44 @@ export class StationQuery {
     return promise;
   }
 
+  formVersionURL() {
+      let colon = ":";
+      if (this.protocol().endsWith(colon)) {
+        colon = "";
+      }
+      return this.protocol()+colon+"//"+this.host()+"/fdsnws/station/1/version";
+  }
+
+  queryVersion() {
+    let mythis = this;
+    let promise = new RSVP.Promise(function(resolve, reject) {
+      let url = mythis.formVersionURL();
+      let client = new XMLHttpRequest();
+      client.open("GET", url);
+      client.onreadystatechange = handler;
+      client.responseType = "text";
+      client.setRequestHeader("Accept", "text/plain");
+      client.send();
+
+      function handler() {
+        if (this.readyState === this.DONE) {
+          console.log("handle version: "+mythis.host()+" "+this.status);
+          if (this.status === 200) { resolve(this.response); }
+          else {
+            console.log("Reject version: "+mythis.host()+" "+this.status);reject(this); }
+        }
+      }
+    });
+    return promise;
+  }
+
   formURL(level) {
     if (! level) {throw new Error("level not specified, should be one of network, station, channel, response.");}
-    let url = this.protocol()+"://"+this.host()+"/fdsnws/station/1/query?";
+    let colon = ":";
+    if (this.protocol().endsWith(colon)) {
+      colon = "";
+    }
+    let url = this.protocol()+colon+"//"+this.host()+"/fdsnws/station/1/query?";
     url = url+"level="+level+"&";
     if (this._networkCode) { url = url+"net="+this.networkCode()+"&";}
     if (this._stationCode) { url = url+"sta="+this.stationCode()+"&";}
