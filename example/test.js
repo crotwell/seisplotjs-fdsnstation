@@ -7,13 +7,20 @@ var fdsnstation = seisplotjs_fdsnstation
 var daysAgo = 10;
 
 var staQuery = new fdsnstation.StationQuery()
-  .networkCode("CO");
+  .networkCode("CO,SP");
+var url = staQuery.formURL(fdsnstation.LEVEL_STATION);
 wp.d3.select("div.url")
-    .append("p")
-    .text("URL: "+staQuery.formURL(fdsnstation.LEVEL_STATION));
+    .append("a")
+    .attr("href", url)
+    .text("URL: "+url);
+
 staQuery.queryStations().then(function(staml) {
   console.log("got staml :"+staml.length);
-  console.log("stations length :"+staml[0].stations.length);
+  if (staml.length > 0) {
+    console.log("stations length :"+staml[0].stations.length);
+  } else {
+    console.log("no stations in first network");
+  }
   var table = wp.d3.select("div.stations")
     .select("table");
   if ( table.empty()) {
@@ -28,9 +35,17 @@ staQuery.queryStations().then(function(staml) {
     th.append("th").text("Name");
     table.append("tbody");
   }
+
+  var allStations = staml.reduce(function(acc, val) {
+    if (val && val.stations) {
+      acc = acc.concat(val.stations());
+    }
+    return acc;
+  }, [] );
+
   var tableData = table.select("tbody")
     .selectAll("tr")
-    .data(staml[0].stations(), function(d) { return d.codes();});
+    .data(allStations, function(d) { return d.codes();});
 
   tableData.exit().remove();
   var tr = tableData.enter()
@@ -72,7 +87,11 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         chanUrlP = wp.d3.select("div.chanurl")
           .append("p");
       }
-      chanUrlP.text("URL: "+chanQuery.formURL(fdsnstation.LEVEL_CHANNEL));
+      var chanurl = chanQuery.formURL(fdsnstation.LEVEL_CHANNEL);
+      chanUrlP
+          .append("a")
+          .attr("href", url)
+          .text("URL: "+url);
       chanQuery.queryChannels().then(function(staml) {
 
       var table = wp.d3.select("div.channels")
