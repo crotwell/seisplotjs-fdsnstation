@@ -17,6 +17,9 @@ export const LEVEL_RESPONSE = 'response';
 export const IRIS_HOST = "service.iris.edu";
 
 export const STAML_NS = 'http://www.fdsn.org/xml/station/1';
+            
+export const FAKE_EMPTY_XML = '<?xml version="1.0" encoding="ISO-8859-1"?> <FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.0" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:iris="http://www.fdsn.org/xml/station/1/iris"> </FDSNStationXML>';
+ 
 
 export class StationQuery {
   constructor(host) {
@@ -175,8 +178,18 @@ export class StationQuery {
       function handler() {
         if (this.readyState === this.DONE) {
           if (this.status === 200) { 
-            resolve(this.responseXML); }
-          else { reject(this); }
+            resolve(this.responseXML); 
+          } else if (this.status === 204 || this.status === 404) {
+            // 204 is nodata, so successful but empty
+            if (DOMParser) {
+console.log("204 nodata so return empty xml");
+              resolve(new DOMParser().parseFromString(FAKE_EMPTY_XML, "text/xml")); 
+            } else {
+              throw new Error("Got 204 but can't find DOMParser to generate empty xml");
+            }
+          } else {
+            reject(this); 
+          }
         }
       }
     });
