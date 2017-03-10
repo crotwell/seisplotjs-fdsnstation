@@ -227,6 +227,10 @@ console.log("204 nodata so return empty xml");
     return promise;
   }
 
+  makeParam(name, val) {
+    return name+"="+encodeURIComponent(val)+"&";
+  }
+
   formURL(level) {
     if (! level) {throw new Error("level not specified, should be one of network, station, channel, response.");}
     let colon = ":";
@@ -234,18 +238,21 @@ console.log("204 nodata so return empty xml");
       colon = "";
     }
     let url = this.protocol()+colon+"//"+this.host()+"/fdsnws/station/1/query?";
-    url = url+"level="+level+"&";
-    if (this._networkCode) { url = url+"net="+this.networkCode()+"&";}
-    if (this._stationCode) { url = url+"sta="+this.stationCode()+"&";}
-    if (this._locationCode) { url = url+"loc="+this.locationCode()+"&";}
-    if (this._channelCode) { url = url+"cha="+this.channelCode()+"&";}
-    if (this._startTime) { url = url+"starttime="+this.toIsoWoZ(this.startTime())+"&";}
-    if (this._endTime) { url = url+"endtime="+this.toIsoWoZ(this.endTime())+"&";}
-    if (this._minLat) { url = url+"minlat="+this.minLat()+"&";}
-    if (this._maxLat) { url = url+"maxlat="+this.maxLat()+"&";}
-    if (this._minLon) { url = url+"minlon="+this.minLon()+"&";}
-    if (this._maxLon) { url = url+"maxlon="+this.maxLon()+"&";}
-    return url.substr(0, url.length-1); // zap last & or ?
+    url = url+this.makeParam("level", level);
+    if (this._networkCode) { url = url+this.makeParam("net", this.networkCode());}
+    if (this._stationCode) { url = url+this.makeParam("sta", this.stationCode());}
+    if (this._locationCode) { url = url+this.makeParam("loc", this.locationCode());}
+    if (this._channelCode) { url = url+this.makeParam("cha", this.channelCode());}
+    if (this._startTime) { url = url+this.makeParam("starttime", this.toIsoWoZ(this.startTime()));}
+    if (this._endTime) { url = url+this.makeParam("endtime", this.toIsoWoZ(this.endTime()));}
+    if (this._minLat) { url = url+this.makeParam("minlat", this.minLat());}
+    if (this._maxLat) { url = url+this.makeParam("maxlat", this.maxLat());}
+    if (this._minLon) { url = url+this.makeParam("minlon", this.minLon());}
+    if (this._maxLon) { url = url+this.makeParam("maxlon", this.maxLon());}
+    if (url.endsWith('&') || url.endsWith('?')) {
+      url = url.substr(0, url.length-1); // zap last & or ?
+    }
+    return url;
   }
 
   // these are similar methods as in seisplotjs-fdsnevent
