@@ -87,11 +87,12 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         chanUrlP = wp.d3.select("div.chanurl")
           .append("p");
       }
+      chanUrlP.selectAll("*").remove();
       var chanurl = chanQuery.formURL(fdsnstation.LEVEL_CHANNEL);
       chanUrlP
           .append("a")
-          .attr("href", url)
-          .text("URL: "+url);
+          .attr("href", chanurl)
+          .text("URL: "+chanurl);
       chanQuery.queryChannels().then(function(staml) {
 
       var table = wp.d3.select("div.channels")
