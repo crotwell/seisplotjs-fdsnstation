@@ -23,17 +23,24 @@ export const FAKE_EMPTY_XML = '<?xml version="1.0" encoding="ISO-8859-1"?> <FDSN
 
 export class StationQuery {
   constructor(host) {
+    this._specVersion = 1;
     this._protocol = 'http';
     this._host = host;
     if (! host) {
       this._host = IRIS_HOST;
     }
   }
+  specVersion(value) {
+    return arguments.length ? (this._specVersion = value, this) : this._specVersion;
+  }
   protocol(value) {
     return arguments.length ? (this._protocol = value, this) : this._protocol;
   }
   host(value) {
     return arguments.length ? (this._host = value, this) : this._host;
+  }
+  nodata(value) {
+    return arguments.length ? (this._nodata = value, this) : this._nodata;
   }
   networkCode(value) {
     return arguments.length ? (this._networkCode = value, this) : this._networkCode;
@@ -53,11 +60,17 @@ export class StationQuery {
   endTime(value) {
     return arguments.length ? (this._endTime = value, this) : this._endTime;
   }
-  minMag(value) {
-    return arguments.length ? (this._minMag = value, this) : this._minMag;
+  startBefore(value) {
+    return arguments.length ? (this._startBefore = value, this) : this._startBefore;
   }
-  maxMag(value) {
-    return arguments.length ? (this._maxMag = value, this) : this._maxMag;
+  startAfter(value) {
+    return arguments.length ? (this._startAfter = value, this) : this._startAfter;
+  }
+  endBefore(value) {
+    return arguments.length ? (this._endBefore = value, this) : this._endBefore;
+  }
+  endAfter(value) {
+    return arguments.length ? (this._endAfter = value, this) : this._endAfter;
   }
   minLat(value) {
     return arguments.length ? (this._minLat = value, this) : this._minLat;
@@ -68,8 +81,29 @@ export class StationQuery {
   minLon(value) {
     return arguments.length ? (this._minLon = value, this) : this._minLon;
   }
-  maxLon(value) {
-    return arguments.length ? (this._maxLon = value, this) : this._maxLon;
+  latitude(value) {
+    return arguments.length ? (this._latitude = value, this) : this._latitude;
+  }
+  longitude(value) {
+    return arguments.length ? (this._longitude = value, this) : this._longitude;
+  }
+  minRadius(value) {
+    return arguments.length ? (this._minRadius = value, this) : this._minRadius;
+  }
+  maxRadius(value) {
+    return arguments.length ? (this._maxRadius = value, this) : this._maxRadius;
+  }
+  includeRestricted(value) {
+    return arguments.length ? (this._includeRestricted = value, this) : this._includeRestricted;
+  }
+  includeAvailability(value) {
+    return arguments.length ? (this._includeAvailability = value, this) : this._includeAvailability;
+  }
+  updatedAfter(value) {
+    return arguments.length ? (this._updatedAfter = value, this) : this._updatedAfter;
+  }
+  matchTimeseries(value) {
+    return arguments.length ? (this._matchTimeseries = value, this) : this._matchTimeseries;
   }
 
   convertToNetwork(xml) {
@@ -179,7 +213,8 @@ export class StationQuery {
         if (this.readyState === this.DONE) {
           if (this.status === 200) { 
             resolve(this.responseXML); 
-          } else if (this.status === 204 || this.status === 404) {
+          } else if (this.status === 204 || (mythis.nodata() && this.status === mythis.nodata())) {
+
             // 204 is nodata, so successful but empty
             if (DOMParser) {
 console.log("204 nodata so return empty xml");
@@ -197,11 +232,7 @@ console.log("204 nodata so return empty xml");
   }
 
   formVersionURL() {
-      let colon = ":";
-      if (this.protocol().endsWith(colon)) {
-        colon = "";
-      }
-      return this.protocol()+colon+"//"+this.host()+"/fdsnws/station/1/version";
+      return this.formBaseURL()+"/version";
   }
 
   queryVersion() {
@@ -231,13 +262,17 @@ console.log("204 nodata so return empty xml");
     return name+"="+encodeURIComponent(val)+"&";
   }
 
-  formURL(level) {
-    if (! level) {throw new Error("level not specified, should be one of network, station, channel, response.");}
+  formBaseURL() {
     let colon = ":";
     if (this.protocol().endsWith(colon)) {
       colon = "";
     }
-    let url = this.protocol()+colon+"//"+this.host()+"/fdsnws/station/1/query?";
+    return this.protocol()+colon+"//"+this.host()+"/fdsnws/station/"+this.specVersion();
+  }
+
+  formURL(level) {
+    let url = this.formBaseURL()+"/query?";
+    if (! level) {throw new Error("level not specified, should be one of network, station, channel, response.");}
     url = url+this.makeParam("level", level);
     if (this._networkCode) { url = url+this.makeParam("net", this.networkCode());}
     if (this._stationCode) { url = url+this.makeParam("sta", this.stationCode());}
@@ -245,10 +280,22 @@ console.log("204 nodata so return empty xml");
     if (this._channelCode) { url = url+this.makeParam("cha", this.channelCode());}
     if (this._startTime) { url = url+this.makeParam("starttime", this.toIsoWoZ(this.startTime()));}
     if (this._endTime) { url = url+this.makeParam("endtime", this.toIsoWoZ(this.endTime()));}
+    if (this._startBefore) { url = url+this.makeParam("startbefore", this.toIsoWoZ(this.startBefore()));}
+    if (this._startAfter) { url = url+this.makeParam("startafter", this.toIsoWoZ(this.startAfter()));}
+    if (this._endBefore) { url = url+this.makeParam("endbefore", this.toIsoWoZ(this.endBefore()));}
+    if (this._endAfter) { url = url+this.makeParam("endafter", this.toIsoWoZ(this.endAfter()));}
     if (this._minLat) { url = url+this.makeParam("minlat", this.minLat());}
     if (this._maxLat) { url = url+this.makeParam("maxlat", this.maxLat());}
     if (this._minLon) { url = url+this.makeParam("minlon", this.minLon());}
     if (this._maxLon) { url = url+this.makeParam("maxlon", this.maxLon());}
+    if (this._latitude) { url = url+this.makeParam("lat", this.latitude());}
+    if (this._longitude) { url = url+this.makeParam("lon", this.longitude());}
+    if (this._minRadius) { url = url+this.makeParam("minradius", this.minRadius());}
+    if (this._maxRadius) { url = url+this.makeParam("maxradius", this.maxRadius());}
+    if (this._includeRestricted) { url = url+this.makeParam("includerestricted", this.includeRestricted());}
+    if (this._includeAvailability) { url = url+this.makeParam("includeavailability", this.includeAvailability());}
+    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", this.updatedAfter());}
+    if (this._matchTimeseries) { url = url+this.makeParam("matchtimeseries", this.matchTimeseries());}
     if (url.endsWith('&') || url.endsWith('?')) {
       url = url.substr(0, url.length-1); // zap last & or ?
     }
