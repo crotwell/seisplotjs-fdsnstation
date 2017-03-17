@@ -205,14 +205,17 @@ export class StationQuery {
       let url = mythis.formURL(mylevel);
       client.open("GET", url);
       client.onreadystatechange = handler;
-      client.responseType = "document";
+      client.responseType = "text"; // use text so error isn't parsed as xml
       client.setRequestHeader("Accept", "application/xml");
       client.send();
 
       function handler() {
         if (this.readyState === this.DONE) {
           if (this.status === 200) { 
-            resolve(this.responseXML); 
+              let out = new DOMParser().parseFromString(this.response, "text/xml");
+              out.url = url;
+              resolve(out); 
+//            resolve(this.responseXML); 
           } else if (this.status === 204 || (mythis.nodata() && this.status === mythis.nodata())) {
 
             // 204 is nodata, so successful but empty
