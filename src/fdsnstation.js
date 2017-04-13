@@ -114,6 +114,10 @@ export class StationQuery {
     if (xml.getAttribute("endDate")) {
       out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
     }
+    var totSta = xml.getElementsByTagNameNS(STAML_NS, "TotalNumberStations");
+    if (totSta && totSta.length >0) {
+      out.totalNumberStations = parseInt(this._grabFirstElText(xml, "TotalNumberStations"));
+    }
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
     let stations = [];
     for (let i=0; i<staArray.length; i++) {
