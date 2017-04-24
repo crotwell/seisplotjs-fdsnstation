@@ -159,10 +159,26 @@ export class StationQuery {
     if (xml.getAttribute("endDate")) {
       out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
     }
-    let response = xml.getElementsByTagNameNS(STAML_NS, 'Response');
-    let inst = response.item(0).getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
+    let responseXml = xml.getElementsByTagNameNS(STAML_NS, 'Response');
+    if (responseXml && responseXml.length > 0) {
+      out.response(this.convertToResponse(responseXml.item(0)));
+    }
+    return out;
+  }
+
+  convertToResponse(responseXml) {
+    let mythis = this;
+    let out;
+    let inst = responseXml.getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
     if (inst && inst.item(0)) {
-      out.instrumentSensitivity(this.convertToInstrumentSensitivity(this._grabFirstEl(this._grabFirstEl(xml, 'Response'), 'InstrumentSensitivity')));
+      out = new model.Response(this.convertToInstrumentSensitivity(inst.item(0)));
+      let xmlStages = Array.from(responseXml.getElementsByTagNameNS(STAML_NS, 'Stage'));
+      let jsStages = xmlStages.map(function(stageXml) {
+        return mythis.convertToStage(stageXml);
+      });
+      out.stages(jsStages);
+    } else {
+      throw new Error("Response has no instrumentSeneitivity");
     }
     return out;
   }
@@ -174,6 +190,96 @@ export class StationQuery {
     let outputUnits = this._grabFirstElText(this._grabFirstEl(xml, 'OutputUnits'), 'Name');
     return new model.InstrumentSensitivity(sensitivity, frequency, inputUnits, outputUnits);
   }
+
+  convertToStage(stageXml) {
+    let mythis = this;
+    let subEl = stageXml.firstElementChild;
+    let filter;
+    let description = this._grabFirstElText(stageXml, 'Description');
+    let inputUnits = this._grabFirstElText(this._grabFirstEl(stageXml, 'InputUnits'), 'Name');
+    let outputUnits = this._grabFirstElText(this._grabFirstEl(stageXml, 'OutputUnits'), 'Name');
+    if (subEl.localName == 'PolesZeros') {
+      filter = new model.PolesZeros(inputUnits, outputUnits);
+      filter.pzTransferFunctionType(this._grabFirstElText(stageXml, 'PzTransferFunctionType'))
+            .normalizationFactor(this._grabFirstElFloat(stageXml, 'NormalizationFactor'))
+            .normalizationFrequency(this._grabFirstElFloat(stageXml, 'NormalizationFrequency'));
+      let zeros = Array.from(stageXml.getElementsByTagNameNS(STAML_NS, 'Zero'))
+          .map(function(zeroEl) {
+            return model.createComplex(mythis._grabFirstElFloat(zeroEl, 'Real'),
+                               mythis._grabFirstElFloat(zeroEl, 'Imaginary'));
+          });
+      let poles = Array.from(stageXml.getElementsByTagNameNS(STAML_NS, 'Pole'))
+          .map(function(poleEl) {
+            return model.createComplex(mythis._grabFirstElFloat(poleEl, 'Real'),
+                               mythis._grabFirstElFloat(poleEl, 'Imaginary'));
+          });
+      filter.zeros(zeros).poles(poles);
+    } else if (subEl.localName == 'Coefficients') {
+      let coeffXml = subEl;
+      filter = new model.CoefficientsFilter(inputUnits, outputUnits);
+      filter.cfTransferFunction(this._grabFirstElText(coeffXml, 'CfTransferFunctionType'));
+      filter.numerator(Array.from(coeffXml.getElementsByTagNameNS(STAML_NS, 'Numerator'))
+          .map(function(numerEl) {
+            return parseFloat(numerEl.textContent);
+          }));
+      filter.denominator(Array.from(coeffXml.getElementsByTagNameNS(STAML_NS, 'Denominator'))
+          .map(function(denomEl) {
+            return parseFloat(denomEl.textContent);
+          }));
+    } else if (subEl.localName == 'ResponseList') {
+      throw new Error("ResponseList not supported: ");
+    } else if (subEl.localName == 'FIR') {
+      let firXml = subEl;
+      filter = new model.FIR(inputUnits, outputUnits);
+      filter.symmetry(this._grabFirstElText(firXml, 'Symmetry'));
+      filter.numerator(Array.from(firXml.getElementsByTagNameNS(STAML_NS, 'NumeratorCoefficient'))
+          .map(function(numerEl) {
+            return parseFloat(numerEl.textContent);
+          }));
+    } else if (subEl.localName == 'Polynomial') {
+      throw new Error("Polynomial not supported: ");
+    } else if (subEl.localName == 'StageGain') {
+      // gain only stage, pick it up below
+    } else {
+      throw new Error("Unknown Stage type: "+ subEl.localName);
+    }
+    // add description if it was there
+    if (description) {
+      filter.description(description);
+    }
+    if (stageXml.hasAttribute('name')) {
+      filter.name(stageXml.getAttribute('name'));
+    }
+    var decimationXml = this._grabFirstEl(stageXml, 'Decimation');
+    var decimation = null;
+    if (decimationXml) {
+      decimation = this.convertToDecimation(decimationXml);
+    }
+    var gainXml = this._grabFirstEl(stageXml, 'StageGain');
+    var gain = null;
+    if (gainXml) {
+      gain = this.convertToGain(gainXml);
+    }
+    return new model.Stage(filter, decimation, gain);
+  }
+
+  convertToDecimation(decXml) {
+    let out = new model.Decimation();
+    return out
+      .inputSampleRate(this._grabFirstElFloat(decXml, 'InputSampleRate'))
+      .factor(this._grabFirstElInt(decXml, 'Factor'))
+      .offset(this._grabFirstElInt(decXml, 'Offset'))
+      .delay(this._grabFirstElFloat(decXml, 'Delay'))
+      .correction(this._grabFirstElFloat(decXml, 'Correction'));
+  }
+
+  convertToGain(gainXml) {
+    let out = new model.Gain();
+    return out
+      .value(this._grabFirstElFloat(gainXml, 'Value'))
+      .frequency(this._grabFirstElFloat(gainXml, 'Frequency'));
+  }
+
 
   queryNetworks() {
     return this.query(LEVEL_NETWORK);
@@ -348,6 +454,14 @@ console.log("204 nodata so return empty xml");
     let out = this._grabFirstElText(xml, tagName);
     if (out) {
       out = parseFloat(out); 
+    }
+    return out;
+  }
+
+  _grabFirstElInt(xml, tagName) {
+    let out = this._grabFirstElText(xml, tagName);
+    if (out) {
+      out = parseInt(out); 
     }
     return out;
   }

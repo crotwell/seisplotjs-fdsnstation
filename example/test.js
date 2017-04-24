@@ -145,9 +145,19 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         .text(function(d) {
           return d.restrictedStatus()+" ";
         });
+      tr.on("click", function(d){
+        console.log("click channel: "+d.codes());
+        chanQuery.locationCode(d.locationCode())
+          .channelCode(d.channelCode())
+          .startTime(d.startDate())
+          .endTime(d.endDate());
+        chanQuery.queryResponse().then(function(nets) {
+          console.log("got response: "+nets[0].stations()[0].channels()[0].response());
         });
-
+      });
     });
+
+  });
     
 })
 .catch( function(reason) {
