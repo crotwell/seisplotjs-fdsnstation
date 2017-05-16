@@ -2,7 +2,7 @@
 Parsing of output from FDSN Station web service.
 
 
-Example:
+See the example dir for an example.
 
 
 
