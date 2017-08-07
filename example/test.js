@@ -7,7 +7,7 @@ var fdsnstation = seisplotjs_fdsnstation
 var daysAgo = 10;
 
 var staQuery = new fdsnstation.StationQuery()
-  .networkCode("CO,SP");
+  .networkCode("TA,CO,SP").stationCode('109C');
 var url = staQuery.formURL(fdsnstation.LEVEL_STATION);
 wp.d3.select("div.url")
     .append("a")
@@ -151,19 +151,19 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         });
       tr.append("td")
         .text(function(d) {
-          return d.response().instrumentSensitivity().inputUnits()+" ";
+          return (d.response() && d.response().instrumentSensitivity() ) ? d.response().instrumentSensitivity().inputUnits()+" " : "";
         });
       tr.append("td")
         .text(function(d) {
-          return d.response().instrumentSensitivity().outputUnits()+" ";
+          return (d.response() && d.response().instrumentSensitivity() ) ? d.response().instrumentSensitivity().outputUnits()+" " : "";
         });
       tr.append("td")
         .text(function(d) {
-          return d.response().instrumentSensitivity().sensitivity()+" ";
+          return (d.response() && d.response().instrumentSensitivity() ) ? d.response().instrumentSensitivity().sensitivity()+" " : "";
         });
       tr.append("td")
         .text(function(d) {
-          return d.response().instrumentSensitivity().frequency()+" ";
+          return (d.response() && d.response().instrumentSensitivity() ) ? d.response().instrumentSensitivity().frequency()+" " : "";
         });
       tr.on("click", function(d){
         console.log("click channel: "+d.codes());
