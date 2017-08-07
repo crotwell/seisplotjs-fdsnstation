@@ -108,6 +108,10 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
         th.append("th").text("Depth");
         th.append("th").text("Az/Dip");
         th.append("th").text("Restrict");
+        th.append("th").text("In Unit");
+        th.append("th").text("Out Unit");
+        th.append("th").text("Sens.");
+        th.append("th").text("Freq.");
         table.append("tbody");
       }
       var tableData = table.select("tbody")
@@ -144,6 +148,22 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
       tr.append("td")
         .text(function(d) {
           return d.restrictedStatus()+" ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return d.response().instrumentSensitivity().inputUnits()+" ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return d.response().instrumentSensitivity().outputUnits()+" ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return d.response().instrumentSensitivity().sensitivity()+" ";
+        });
+      tr.append("td")
+        .text(function(d) {
+          return d.response().instrumentSensitivity().frequency()+" ";
         });
       tr.on("click", function(d){
         console.log("click channel: "+d.codes());
