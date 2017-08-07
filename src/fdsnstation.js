@@ -160,7 +160,7 @@ export class StationQuery {
       out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
     }
     let responseXml = xml.getElementsByTagNameNS(STAML_NS, 'Response');
-    if (responseXml && responseXml.length > 0) {
+    if (responseXml && responseXml.length > 0 ) {
       out.response(this.convertToResponse(responseXml.item(0)));
     }
     return out;
@@ -172,13 +172,17 @@ export class StationQuery {
     let inst = responseXml.getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
     if (inst && inst.item(0)) {
       out = new model.Response(this.convertToInstrumentSensitivity(inst.item(0)));
-      let xmlStages = Array.from(responseXml.getElementsByTagNameNS(STAML_NS, 'Stage'));
-      let jsStages = xmlStages.map(function(stageXml) {
+    } else {
+      // DMC returns empty response element when they know nothing (instead 
+      // of just leaving it out). Return empty object in this case
+      out = new model.Response(null);
+    }
+    let xmlStages = responseXml.getElementsByTagNameNS(STAML_NS, 'Stage');
+    if (xmlStages && xmlStages.length > 0) {
+      let jsStages = Array.from(xmlStages).map(function(stageXml) {
         return mythis.convertToStage(stageXml);
       });
       out.stages(jsStages);
-    } else {
-      throw new Error("Response has no instrumentSeneitivity");
     }
     return out;
   }
