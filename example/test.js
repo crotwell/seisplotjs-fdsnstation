@@ -173,6 +173,26 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
           .endTime(d.endDate());
         chanQuery.queryResponse().then(function(nets) {
           console.log("got response: "+nets[0].stations()[0].channels()[0].response());
+          var respUrlP = wp.d3.select("div.responseurl")
+            .select("p");
+          if (respUrlP.empty()) {
+            respUrlP = wp.d3.select("div.responseurl")
+              .append("p");
+          }
+          respUrlP.selectAll("*").remove();
+          var respurl = chanQuery.formURL(fdsnstation.LEVEL_RESPONSE);
+          respUrlP
+              .append("a")
+              .attr("href", respurl)
+              .text("URL: "+respurl);
+          var responseCode = wp.d3.select("div.response")
+            .select("code");
+          if (responseCode.empty()) {
+            responseCode = wp.d3.select("div.response").append("code");
+          }
+          responseCode.selectAll("*").remove();
+          var sense = nets[0].stations()[0].channels()[0].response().instrumentSensitivity();
+          responseCode.text(sense ? (sense.sensitivity()+" "+sense.outputUnits()+" per "+sense.inputUnits()+" at "+sense.frequency()+" Hz") : "No Sensitivity");
         });
       });
     });
