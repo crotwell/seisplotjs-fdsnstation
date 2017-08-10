@@ -81,6 +81,9 @@ export class StationQuery {
   minLon(value) {
     return arguments.length ? (this._minLon = value, this) : this._minLon;
   }
+  maxLon(value) {
+    return arguments.length ? (this._maxLon = value, this) : this._maxLon;
+  }
   latitude(value) {
     return arguments.length ? (this._latitude = value, this) : this._latitude;
   }
