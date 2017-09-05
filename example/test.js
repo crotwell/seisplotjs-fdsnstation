@@ -7,7 +7,7 @@ var fdsnstation = seisplotjs_fdsnstation
 var daysAgo = 10;
 
 var staQuery = new fdsnstation.StationQuery()
-  .networkCode("TA,CO,SP").stationCode('109C');
+  .networkCode("TA,CO").stationCode('109C,JSC');
 var url = staQuery.formURL(fdsnstation.LEVEL_STATION);
 wp.d3.select("div.url")
     .append("a")
@@ -52,6 +52,12 @@ staQuery.queryStations().then(function(staml) {
     .append("tr");
 
   tr.append("td")
+    .append("button")
+    .text("Channels")
+    .on("click", function(d) {
+      listChannels(d);
+    });
+  tr.append("td")
     .text(function(d) {
       return d.codes();
     });
@@ -75,12 +81,13 @@ staQuery.queryStations().then(function(staml) {
     .text(function(d) {
       return d.name()+" ";
     });
+});
+    
 
-    tr.on("click", function(d){
-console.log("click "+d.network().networkCode()+"."+d.stationCode());
+var listChannels = function(sta) {
       var chanQuery = new fdsnstation.StationQuery()
-       .networkCode(d.network().networkCode())
-       .stationCode(d.stationCode());
+       .networkCode(sta.network().networkCode())
+       .stationCode(sta.stationCode());
       var chanUrlP = wp.d3.select("div.chanurl")
           .select("p");
       if (chanUrlP.empty()) {
@@ -195,18 +202,16 @@ console.log("click "+d.network().networkCode()+"."+d.stationCode());
           responseCode.text(sense ? (sense.sensitivity()+" "+sense.outputUnits()+" per "+sense.inputUnits()+" at "+sense.frequency()+" Hz") : "No Sensitivity");
         });
       });
-    });
 
-  });
-    
-})
-.catch( function(reason) {
-console.log("Reject: "+reason);
-wp.d3.select("div.stations")
-    .append("p")
-    .text("Reject: "+reason);
-throw reason;
-});
+    })
+    .catch( function(reason) {
+    console.log("Reject: "+reason);
+    wp.d3.select("div.stations")
+        .append("p")
+        .text("Reject: "+reason);
+    throw reason;
+    });
+}
 
 var plotSeismograms = function(div, net, sta, loc, chan, quake) {
   var dur = 900;
