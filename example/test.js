@@ -82,7 +82,7 @@ staQuery.queryStations().then(function(staml) {
       return d.name()+" ";
     });
 });
-    
+
 
 var listChannels = function(sta) {
       var chanQuery = new fdsnstation.StationQuery()
@@ -252,9 +252,9 @@ wp.loadParse(url, function (error, dataRecords) {
       } else {
           div.selectAll('div.myseisplot').remove();
           var byChannel = wp.miniseed.byChannel(dataRecords);
-          var keys = Object.keys(byChannel);
-          for (var i = 0; i < keys.length; i++) {
-            var key = keys[i];
+          var keys = Array.from(byChannel.keys());
+          console.log("Got "+dataRecords.length+" data records for "+keys.length+" channels");
+          for (var key of byChannel.keys()) {
             var segments = wp.miniseed.merge(byChannel[key]);
             div.append('p').html('Plot for ' + key);
             var svgdiv = div.append('div').attr('class', 'myseisplot');
@@ -275,4 +275,3 @@ wp.loadParse(url, function (error, dataRecords) {
     });
     });
 }
-
