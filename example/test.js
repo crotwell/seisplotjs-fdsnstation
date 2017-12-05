@@ -255,7 +255,7 @@ wp.loadParse(url, function (error, dataRecords) {
           var keys = Array.from(byChannel.keys());
           console.log("Got "+dataRecords.length+" data records for "+keys.length+" channels");
           for (var key of byChannel.keys()) {
-            var segments = wp.miniseed.merge(byChannel[key]);
+            var segments = wp.miniseed.merge(byChannel.get(key));
             div.append('p').html('Plot for ' + key);
             var svgdiv = div.append('div').attr('class', 'myseisplot');
             if (segments.length > 0) {
