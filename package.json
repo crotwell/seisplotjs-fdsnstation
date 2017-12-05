@@ -1,11 +1,11 @@
 {
   "name": "seisplotjs-fdsnstation",
-  "version": "1.0.1-alpha.1",
+  "version": "1.0.1-alpha.2",
   "description": "Querying and parsing of output of FDSN Station web service for network, station, channel and response metadata.",
   "main": "./lib/fdsnstation.js",
   "dependencies": {
     "rsvp": "^4.0.1",
-    "seisplotjs-model": "^1.0.2-alpha.1"
+    "seisplotjs-model": "^1.1.0-alpha.1"
   },
   "scripts": {
     "lint": "eslint 'src/*.js'",

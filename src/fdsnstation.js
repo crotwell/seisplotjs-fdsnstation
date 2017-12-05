@@ -9,17 +9,21 @@ import * as model from 'seisplotjs-model';
 
 export { RSVP, model };
 
+export const moment = model.moment;
+
 export const LEVEL_NETWORK = 'network';
 export const LEVEL_STATION = 'station';
 export const LEVEL_CHANNEL = 'channel';
 export const LEVEL_RESPONSE = 'response';
 
+export const LEVELS = [ LEVEL_NETWORK, LEVEL_STATION, LEVEL_CHANNEL, LEVEL_RESPONSE];
+
 export const IRIS_HOST = "service.iris.edu";
 
 export const STAML_NS = 'http://www.fdsn.org/xml/station/1';
-            
+
 export const FAKE_EMPTY_XML = '<?xml version="1.0" encoding="ISO-8859-1"?> <FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.0" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:iris="http://www.fdsn.org/xml/station/1/iris"> </FDSNStationXML>';
- 
+
 
 export class StationQuery {
   constructor(host) {
@@ -55,22 +59,22 @@ export class StationQuery {
     return arguments.length ? (this._channelCode = value, this) : this._channelCode;
   }
   startTime(value) {
-    return arguments.length ? (this._startTime = value, this) : this._startTime;
+    return arguments.length ? (this._startTime = model.checkStringOrDate(value), this) : this._startTime;
   }
   endTime(value) {
-    return arguments.length ? (this._endTime = value, this) : this._endTime;
+    return arguments.length ? (this._endTime = model.checkStringOrDate(value), this) : this._endTime;
   }
   startBefore(value) {
-    return arguments.length ? (this._startBefore = value, this) : this._startBefore;
+    return arguments.length ? (this._startBefore = model.checkStringOrDate(value), this) : this._startBefore;
   }
   startAfter(value) {
-    return arguments.length ? (this._startAfter = value, this) : this._startAfter;
+    return arguments.length ? (this._startAfter = model.checkStringOrDate(value), this) : this._startAfter;
   }
   endBefore(value) {
-    return arguments.length ? (this._endBefore = value, this) : this._endBefore;
+    return arguments.length ? (this._endBefore = model.checkStringOrDate(value), this) : this._endBefore;
   }
   endAfter(value) {
-    return arguments.length ? (this._endAfter = value, this) : this._endAfter;
+    return arguments.length ? (this._endAfter = model.checkStringOrDate(value), this) : this._endAfter;
   }
   minLat(value) {
     return arguments.length ? (this._minLat = value, this) : this._minLat;
@@ -103,7 +107,7 @@ export class StationQuery {
     return arguments.length ? (this._includeAvailability = value, this) : this._includeAvailability;
   }
   updatedAfter(value) {
-    return arguments.length ? (this._updatedAfter = value, this) : this._updatedAfter;
+    return arguments.length ? (this._updatedAfter = model.checkStringOrDate(value), this) : this._updatedAfter;
   }
   matchTimeseries(value) {
     return arguments.length ? (this._matchTimeseries = value, this) : this._matchTimeseries;
@@ -111,11 +115,11 @@ export class StationQuery {
 
   convertToNetwork(xml) {
     let out = new model.Network(xml.getAttribute("code"))
-      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .startDate(xml.getAttribute("startDate"))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .description(this._grabFirstElText(xml, 'Description'));
     if (xml.getAttribute("endDate")) {
-      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+      out.endDate(xml.getAttribute("endDate"));
     }
     var totSta = xml.getElementsByTagNameNS(STAML_NS, "TotalNumberStations");
     if (totSta && totSta.length >0) {
@@ -131,14 +135,14 @@ export class StationQuery {
   }
   convertToStation(network, xml) {
     let out = new model.Station(network, xml.getAttribute("code"))
-      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .startDate(xml.getAttribute("startDate"))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .latitude(this._grabFirstElFloat(xml, 'Latitude'))
       .longitude(this._grabFirstElFloat(xml, 'Longitude'))
       .elevation(this._grabFirstElFloat(xml, 'Elevation'))
       .name(this._grabFirstElText(this._grabFirstEl(xml, 'Site'), 'Name'));
     if (xml.getAttribute("endDate")) {
-      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+      out.endDate(xml.getAttribute("endDate"));
     }
     let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
     let channels = [];
@@ -150,7 +154,7 @@ export class StationQuery {
   }
   convertToChannel(station, xml) {
     let out = new model.Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
-      .startDate(this.toDateUTC(xml.getAttribute("startDate")))
+      .startDate(xml.getAttribute("startDate"))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
       .latitude(this._grabFirstElFloat(xml, 'Latitude'))
       .longitude(this._grabFirstElFloat(xml, 'Longitude'))
@@ -160,7 +164,7 @@ export class StationQuery {
       .dip(this._grabFirstElFloat(xml, 'Dip'))
       .sampleRate(this._grabFirstElFloat(xml, 'SampleRate'));
     if (xml.getAttribute("endDate")) {
-      out.endDate(this.toDateUTC(xml.getAttribute("endDate")));
+      out.endDate(xml.getAttribute("endDate"));
     }
     let responseXml = xml.getElementsByTagNameNS(STAML_NS, 'Response');
     if (responseXml && responseXml.length > 0 ) {
@@ -176,7 +180,7 @@ export class StationQuery {
     if (inst && inst.item(0)) {
       out = new model.Response(this.convertToInstrumentSensitivity(inst.item(0)));
     } else {
-      // DMC returns empty response element when they know nothing (instead 
+      // DMC returns empty response element when they know nothing (instead
       // of just leaving it out). Return empty object in this case
       out = new model.Response(null);
     }
@@ -302,6 +306,7 @@ export class StationQuery {
   }
 
   query(level) {
+    if (! LEVELS.includes(level)) {throw new Error("Unknown level: '"+level+"'");}
     let mythis = this;
     return this.queryRawXml(level).then(function(rawXml) {
         let top = rawXml.documentElement;
@@ -328,22 +333,22 @@ export class StationQuery {
 
       function handler() {
         if (this.readyState === this.DONE) {
-          if (this.status === 200) { 
+          if (this.status === 200) {
               let out = new DOMParser().parseFromString(this.response, "text/xml");
               out.url = url;
-              resolve(out); 
-//            resolve(this.responseXML); 
+              resolve(out);
+//            resolve(this.responseXML);
           } else if (this.status === 204 || (mythis.nodata() && this.status === mythis.nodata())) {
 
             // 204 is nodata, so successful but empty
             if (DOMParser) {
 console.log("204 nodata so return empty xml");
-              resolve(new DOMParser().parseFromString(FAKE_EMPTY_XML, "text/xml")); 
+              resolve(new DOMParser().parseFromString(FAKE_EMPTY_XML, "text/xml"));
             } else {
               throw new Error("Got 204 but can't find DOMParser to generate empty xml");
             }
           } else {
-            reject(this); 
+            reject(this);
           }
         }
       }
@@ -414,7 +419,7 @@ console.log("204 nodata so return empty xml");
     if (this._maxRadius) { url = url+this.makeParam("maxradius", this.maxRadius());}
     if (this._includeRestricted) { url = url+this.makeParam("includerestricted", this.includeRestricted());}
     if (this._includeAvailability) { url = url+this.makeParam("includeavailability", this.includeAvailability());}
-    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", this.updatedAfter());}
+    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", this.toIsoWoZ(this.updatedAfter()));}
     if (this._matchTimeseries) { url = url+this.makeParam("matchtimeseries", this.matchTimeseries());}
     if (url.endsWith('&') || url.endsWith('?')) {
       url = url.substr(0, url.length-1); // zap last & or ?
@@ -425,14 +430,8 @@ console.log("204 nodata so return empty xml");
   // these are similar methods as in seisplotjs-fdsnevent
   // duplicate here to avoid dependency and diff NS, yes that is dumb...
 
-  toDateUTC(str) {
-    if (! str.endsWith('Z')) {
-      str = str + 'Z';
-    }
-    return new Date(Date.parse(str));
-  }
 
-  /** converts to ISO8601 but removes the trailing Z as FDSN web services 
+  /** converts to ISO8601 but removes the trailing Z as FDSN web services
     do not allow that. */
   toIsoWoZ(date) {
     let out = date.toISOString();
@@ -460,7 +459,7 @@ console.log("204 nodata so return empty xml");
   _grabFirstElFloat(xml, tagName) {
     let out = this._grabFirstElText(xml, tagName);
     if (out) {
-      out = parseFloat(out); 
+      out = parseFloat(out);
     }
     return out;
   }
@@ -468,9 +467,8 @@ console.log("204 nodata so return empty xml");
   _grabFirstElInt(xml, tagName) {
     let out = this._grabFirstElText(xml, tagName);
     if (out) {
-      out = parseInt(out); 
+      out = parseInt(out);
     }
     return out;
   }
 }
-
