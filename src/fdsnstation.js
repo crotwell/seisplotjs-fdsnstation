@@ -224,7 +224,8 @@ export class StationQuery {
             return model.createComplex(mythis._grabFirstElFloat(poleEl, 'Real'),
                                mythis._grabFirstElFloat(poleEl, 'Imaginary'));
           });
-      filter.zeros(zeros).poles(poles);
+      filter.zeros(zeros)
+        .poles(poles);
     } else if (subEl.localName == 'Coefficients') {
       let coeffXml = subEl;
       filter = new model.CoefficientsFilter(inputUnits, outputUnits);
@@ -326,6 +327,10 @@ export class StationQuery {
       let client = new XMLHttpRequest();
       let url = mythis.formURL(mylevel);
       client.open("GET", url);
+      client.ontimeout = function(e) {
+        this.statusText = "Timeout "+this.statusText;
+        reject(this);
+      };
       client.onreadystatechange = handler;
       client.responseType = "text"; // use text so error isn't parsed as xml
       client.setRequestHeader("Accept", "application/xml");
