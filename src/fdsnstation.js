@@ -29,6 +29,9 @@ export class StationQuery {
   constructor(host) {
     this._specVersion = 1;
     this._protocol = 'http';
+    if (document && document.location && "https:" == document.location.protocol) {
+      this._protocol = 'https:'
+    }
     this._host = host;
     if (! host) {
       this._host = IRIS_HOST;
