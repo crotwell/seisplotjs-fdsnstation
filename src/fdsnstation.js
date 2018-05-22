@@ -1,3 +1,4 @@
+// @flow
 
 import RSVP from 'rsvp';
 
@@ -25,8 +26,31 @@ export const STAML_NS = 'http://www.fdsn.org/xml/station/1';
 export const FAKE_EMPTY_XML = '<?xml version="1.0" encoding="ISO-8859-1"?> <FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.0" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:iris="http://www.fdsn.org/xml/station/1/iris"> </FDSNStationXML>';
 
 
+// flow predicate %check functions
+// copy from seisplotjs-model.util
+// import does not seem to work
+export function hasArgs(value: any): boolean %checks {
+  return arguments.length != 0 && typeof value != 'undefined';
+}
+export function hasNoArgs(value: any): boolean %checks {
+  return arguments.length == 0 || typeof value === 'undefined';
+}
+export function isStringArg(value: any): boolean %checks {
+  return hasArgs(value) && typeof value === 'string';
+}
+export function isNumArg(value: any): boolean %checks {
+  return hasArgs(value) && typeof value === 'number';
+}
+
+
 export class StationQuery {
-  constructor(host) {
+  /** @private */
+  _specVersion: number;
+  /** @private */
+  _protocol: string;
+  /** @private */
+  _host: string;
+  constructor(host: string) {
     this._specVersion = 1;
     this._protocol = 'http';
     if (document && document.location && "https:" == document.location.protocol) {
@@ -37,29 +61,78 @@ export class StationQuery {
       this._host = IRIS_HOST;
     }
   }
-  specVersion(value) {
-    return arguments.length ? (this._specVersion = value, this) : this._specVersion;
+  specVersion(value?: number) {
+    if (isNumArg(value)) {
+      this._specVersion = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._specVersion;
+    } else {
+      throw new Error('value argument is optional or number, but was '+value);
+    }
   }
-  protocol(value) {
-    return arguments.length ? (this._protocol = value, this) : this._protocol;
+  protocol(value?: string) {
+    if (isStringArg(value)) {
+      this._protocol = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._protocol;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
-  host(value) {
-    return arguments.length ? (this._host = value, this) : this._host;
+  host(value?: string) {
+    if (isStringArg(value)) {
+      this._host = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._host;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
   nodata(value) {
     return arguments.length ? (this._nodata = value, this) : this._nodata;
   }
   networkCode(value) {
-    return arguments.length ? (this._networkCode = value, this) : this._networkCode;
+    if (isStringArg(value)) {
+      this._networkCode = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._networkCode;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
   stationCode(value) {
-    return arguments.length ? (this._stationCode = value, this) : this._stationCode;
+    if (isStringArg(value)) {
+      this._stationCode = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._stationCode;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
   locationCode(value) {
-    return arguments.length ? (this._locationCode = value, this) : this._locationCode;
+    if (isStringArg(value)) {
+      this._locationCode = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._locationCode;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
   channelCode(value) {
-    return arguments.length ? (this._channelCode = value, this) : this._channelCode;
+    if (isStringArg(value)) {
+      this._channelCode = value;
+      return this;
+    } else if (hasNoArgs(value)) {
+      return this._channelCode;
+    } else {
+      throw new Error('value argument is optional or string, but was '+value);
+    }
   }
   startTime(value) {
     return arguments.length ? (this._startTime = model.checkStringOrDate(value), this) : this._startTime;
@@ -116,7 +189,7 @@ export class StationQuery {
     return arguments.length ? (this._matchTimeseries = value, this) : this._matchTimeseries;
   }
 
-  convertToNetwork(xml) {
+  convertToNetwork(xml): model.Network {
     let out = new model.Network(xml.getAttribute("code"))
       .startDate(xml.getAttribute("startDate"))
       .restrictedStatus(xml.getAttribute("restrictedStatus"))
