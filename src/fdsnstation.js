@@ -7,6 +7,10 @@ RSVP.on('error', function(reason) {
 });
 
 import * as model from 'seisplotjs-model';
+import * as util from './util';
+
+// special due to flow
+import {hasArgs, hasNoArgs, isStringArg, isNumArg, checkStringOrDate, stringify} from 'seisplotjs-model';
 
 export { RSVP, model };
 
@@ -26,22 +30,6 @@ export const STAML_NS = 'http://www.fdsn.org/xml/station/1';
 export const FAKE_EMPTY_XML = '<?xml version="1.0" encoding="ISO-8859-1"?> <FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.0" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:iris="http://www.fdsn.org/xml/station/1/iris"> </FDSNStationXML>';
 
 
-// flow predicate %check functions
-// copy from seisplotjs-model.util
-// import does not seem to work
-export function hasArgs(value: any): boolean %checks {
-  return arguments.length != 0 && typeof value != 'undefined';
-}
-export function hasNoArgs(value: any): boolean %checks {
-  return arguments.length == 0 || typeof value === 'undefined';
-}
-export function isStringArg(value: any): boolean %checks {
-  return hasArgs(value) && typeof value === 'string';
-}
-export function isNumArg(value: any): boolean %checks {
-  return hasArgs(value) && typeof value === 'number';
-}
-
 
 export class StationQuery {
   /** @private */
@@ -50,51 +38,104 @@ export class StationQuery {
   _protocol: string;
   /** @private */
   _host: string;
-  constructor(host: string) {
+  /** @private */
+  _nodata: number;
+  /** @private */
+  _networkCode: string;
+  /** @private */
+  _stationCode: string;
+  /** @private */
+  _locationCode: string;
+  /** @private */
+  _channelCode: string;
+  /** @private */
+  _startTime: moment;
+  /** @private */
+  _endTime: moment;
+  /** @private */
+  _startBefore: moment;
+  /** @private */
+  _endBefore: moment;
+  /** @private */
+  _startAfter: moment;
+  /** @private */
+  _endAfter: moment;
+  /** @private */
+  _minLat: number;
+  /** @private */
+  _maxLat: number;
+  /** @private */
+  _minLon: number;
+  /** @private */
+  _maxLon: number;
+  /** @private */
+  _latitude: number;
+  /** @private */
+  _longitude: number;
+  /** @private */
+  _minRadius: number;
+  /** @private */
+  _maxRadius: number;
+  /** @private */
+  _includeRestricted: boolean;
+  /** @private */
+  _includeAvailability: boolean;
+  /** @private */
+  _updatedAfter: moment;
+  /** @private */
+  _matchTimeseries: boolean;
+  constructor(host?: string) {
     this._specVersion = 1;
     this._protocol = 'http';
     if (document && document.location && "https:" == document.location.protocol) {
       this._protocol = 'https:'
     }
-    this._host = host;
+    this.host(host);
     if (! host) {
       this._host = IRIS_HOST;
     }
   }
-  specVersion(value?: number) {
-    if (isNumArg(value)) {
+  specVersion(value?: number): number | StationQuery {
+    if (hasArgs(value)) {
       this._specVersion = value;
       return this;
     } else if (hasNoArgs(value)) {
       return this._specVersion;
     } else {
-      throw new Error('value argument is optional or number, but was '+value);
+      throw new Error('value argument is optional or number, but was '+typeof value);
     }
   }
-  protocol(value?: string) {
+  protocol(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._protocol = value;
       return this;
     } else if (hasNoArgs(value)) {
       return this._protocol;
     } else {
-      throw new Error('value argument is optional or string, but was '+value);
+      throw new Error('value argument is optional or string, but was '+typeof value);
     }
   }
-  host(value?: string) {
+  host(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._host = value;
       return this;
     } else if (hasNoArgs(value)) {
       return this._host;
     } else {
-      throw new Error('value argument is optional or string, but was '+value);
+      throw new Error('value argument is optional or string, but was '+typeof value);
     }
   }
-  nodata(value) {
-    return arguments.length ? (this._nodata = value, this) : this._nodata;
+  nodata(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._nodata;
+    } else if (hasArgs(value)) {
+      this._nodata = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  networkCode(value) {
+  networkCode(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._networkCode = value;
       return this;
@@ -104,7 +145,7 @@ export class StationQuery {
       throw new Error('value argument is optional or string, but was '+value);
     }
   }
-  stationCode(value) {
+  stationCode(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._stationCode = value;
       return this;
@@ -114,7 +155,7 @@ export class StationQuery {
       throw new Error('value argument is optional or string, but was '+value);
     }
   }
-  locationCode(value) {
+  locationCode(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._locationCode = value;
       return this;
@@ -124,7 +165,7 @@ export class StationQuery {
       throw new Error('value argument is optional or string, but was '+value);
     }
   }
-  channelCode(value) {
+  channelCode(value?: string) :string | StationQuery {
     if (isStringArg(value)) {
       this._channelCode = value;
       return this;
@@ -134,72 +175,198 @@ export class StationQuery {
       throw new Error('value argument is optional or string, but was '+value);
     }
   }
-  startTime(value) {
-    return arguments.length ? (this._startTime = model.checkStringOrDate(value), this) : this._startTime;
+  startTime(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._startTime;
+    } else if (hasArgs(value)) {
+      this._startTime = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  endTime(value) {
-    return arguments.length ? (this._endTime = model.checkStringOrDate(value), this) : this._endTime;
+  endTime(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._endTime;
+    } else if (hasArgs(value)) {
+      this._endTime = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  startBefore(value) {
-    return arguments.length ? (this._startBefore = model.checkStringOrDate(value), this) : this._startBefore;
+  startBefore(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._startBefore;
+    } else if (hasArgs(value)) {
+      this._startBefore = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  startAfter(value) {
-    return arguments.length ? (this._startAfter = model.checkStringOrDate(value), this) : this._startAfter;
+  endBefore(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._endBefore;
+    } else if (hasArgs(value)) {
+      this._endBefore = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  endBefore(value) {
-    return arguments.length ? (this._endBefore = model.checkStringOrDate(value), this) : this._endBefore;
+  startAfter(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._startAfter;
+    } else if (hasArgs(value)) {
+      this._startAfter = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  endAfter(value) {
-    return arguments.length ? (this._endAfter = model.checkStringOrDate(value), this) : this._endAfter;
+  endAfter(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._endAfter;
+    } else if (hasArgs(value)) {
+      this._endAfter = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  minLat(value) {
-    return arguments.length ? (this._minLat = value, this) : this._minLat;
+  minLat(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._minLat;
+    } else if (isNumArg(value)) {
+      this._minLat = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  maxLat(value) {
-    return arguments.length ? (this._maxLat = value, this) : this._maxLat;
+  maxLat(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._maxLat;
+    } else if (isNumArg(value)) {
+      this._maxLat = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  minLon(value) {
-    return arguments.length ? (this._minLon = value, this) : this._minLon;
+  minLon(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._minLon;
+    } else if (isNumArg(value)) {
+      this._minLon = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  maxLon(value) {
-    return arguments.length ? (this._maxLon = value, this) : this._maxLon;
+  maxLon(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._maxLon;
+    } else if (isNumArg(value)) {
+      this._maxLon = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  latitude(value) {
-    return arguments.length ? (this._latitude = value, this) : this._latitude;
+  latitude(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._latitude;
+    } else if (isNumArg(value)) {
+      this._latitude = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  longitude(value) {
-    return arguments.length ? (this._longitude = value, this) : this._longitude;
+  longitude(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._longitude;
+    } else if (isNumArg(value)) {
+      this._longitude = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  minRadius(value) {
-    return arguments.length ? (this._minRadius = value, this) : this._minRadius;
+  minRadius(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._minRadius;
+    } else if (isNumArg(value)) {
+      this._minRadius = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  maxRadius(value) {
-    return arguments.length ? (this._maxRadius = value, this) : this._maxRadius;
+  maxRadius(value?: number): number | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._maxRadius;
+    } else if (isNumArg(value)) {
+      this._maxRadius = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or number, but was '+typeof value);
+    }
   }
-  includeRestricted(value) {
-    return arguments.length ? (this._includeRestricted = value, this) : this._includeRestricted;
+  includeRestricted(value?: boolean): boolean | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._includeRestricted;
+    } else if (hasArgs(value)) {
+      this._includeRestricted = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or boolean, but was '+typeof value);
+    }
   }
-  includeAvailability(value) {
-    return arguments.length ? (this._includeAvailability = value, this) : this._includeAvailability;
+  includeAvailability(value?: boolean): boolean | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._includeAvailability;
+    } else if (hasArgs(value)) {
+      this._includeAvailability = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or boolean, but was '+typeof value);
+    }
   }
-  updatedAfter(value) {
-    return arguments.length ? (this._updatedAfter = model.checkStringOrDate(value), this) : this._updatedAfter;
+  updatedAfter(value?: moment) :moment | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._updatedAfter;
+    } else if (hasArgs(value)) {
+      this._updatedAfter = checkStringOrDate(value);
+      return this;
+    } else {
+      throw new Error('value argument is optional or moment or string, but was '+typeof value);
+    }
   }
-  matchTimeseries(value) {
-    return arguments.length ? (this._matchTimeseries = value, this) : this._matchTimeseries;
+  matchTimeseries(value?: boolean): boolean | StationQuery {
+    if (hasNoArgs(value)) {
+      return this._matchTimeseries;
+    } else if (hasArgs(value)) {
+      this._matchTimeseries = value;
+      return this;
+    } else {
+      throw new Error('value argument is optional or boolean, but was '+typeof value);
+    }
   }
 
-  convertToNetwork(xml): model.Network {
-    let out = new model.Network(xml.getAttribute("code"))
-      .startDate(xml.getAttribute("startDate"))
-      .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .description(this._grabFirstElText(xml, 'Description'));
-    if (xml.getAttribute("endDate")) {
-      out.endDate(xml.getAttribute("endDate"));
+  convertToNetwork(xml: Element): model.Network {
+    let out = new model.Network(util._grabAttribute(xml, "code"))
+      .startDate(util._grabAttribute(xml, "startDate"))
+      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
+      .description(util._grabFirstElText(xml, 'Description'));
+    if (util._grabAttribute(xml, "endDate")) {
+      out.endDate(util._grabAttribute(xml, "endDate"));
     }
-    var totSta = xml.getElementsByTagNameNS(STAML_NS, "TotalNumberStations");
+    let totSta = xml.getElementsByTagNameNS(STAML_NS, "TotalNumberStations");
     if (totSta && totSta.length >0) {
-      out.totalNumberStations = parseInt(this._grabFirstElText(xml, "TotalNumberStations"));
+      out.totalNumberStations = parseInt(util._grabFirstElText(xml, "TotalNumberStations"));
     }
     let staArray = xml.getElementsByTagNameNS(STAML_NS, "Station");
     let stations = [];
@@ -209,16 +376,16 @@ export class StationQuery {
     out.stations(stations);
     return out;
   }
-  convertToStation(network, xml) {
-    let out = new model.Station(network, xml.getAttribute("code"))
-      .startDate(xml.getAttribute("startDate"))
-      .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .latitude(this._grabFirstElFloat(xml, 'Latitude'))
-      .longitude(this._grabFirstElFloat(xml, 'Longitude'))
-      .elevation(this._grabFirstElFloat(xml, 'Elevation'))
-      .name(this._grabFirstElText(this._grabFirstEl(xml, 'Site'), 'Name'));
-    if (xml.getAttribute("endDate")) {
-      out.endDate(xml.getAttribute("endDate"));
+  convertToStation(network: model.Network, xml: Element): model.Station {
+    let out = new model.Station(network, util._grabAttribute(xml, "code"))
+      .startDate(util._grabAttribute(xml, "startDate"))
+      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
+      .latitude(util._grabFirstElFloat(xml, 'Latitude'))
+      .longitude(util._grabFirstElFloat(xml, 'Longitude'))
+      .elevation(util._grabFirstElFloat(xml, 'Elevation'))
+      .name(util._grabFirstElText(util._grabFirstEl(xml, 'Site'), 'Name'));
+    if (util._grabAttribute(xml, "endDate")) {
+      out.endDate(util._grabAttribute(xml, "endDate"));
     }
     let chanArray = xml.getElementsByTagNameNS(STAML_NS, "Channel");
     let channels = [];
@@ -228,19 +395,19 @@ export class StationQuery {
     out.channels(channels);
     return out;
   }
-  convertToChannel(station, xml) {
-    let out = new model.Channel(station, xml.getAttribute("code"), xml.getAttribute("locationCode"))
-      .startDate(xml.getAttribute("startDate"))
-      .restrictedStatus(xml.getAttribute("restrictedStatus"))
-      .latitude(this._grabFirstElFloat(xml, 'Latitude'))
-      .longitude(this._grabFirstElFloat(xml, 'Longitude'))
-      .elevation(this._grabFirstElFloat(xml, 'Elevation'))
-      .depth(this._grabFirstElFloat(xml, 'Depth'))
-      .azimuth(this._grabFirstElFloat(xml, 'Azimuth'))
-      .dip(this._grabFirstElFloat(xml, 'Dip'))
-      .sampleRate(this._grabFirstElFloat(xml, 'SampleRate'));
-    if (xml.getAttribute("endDate")) {
-      out.endDate(xml.getAttribute("endDate"));
+  convertToChannel(station: model.Station, xml: Element): model.Channel {
+    let out = new model.Channel(station, util._grabAttribute(xml, "code"), util._grabAttribute(xml, "locationCode"))
+      .startDate(util._grabAttribute(xml, "startDate"))
+      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
+      .latitude(util._grabFirstElFloat(xml, 'Latitude'))
+      .longitude(util._grabFirstElFloat(xml, 'Longitude'))
+      .elevation(util._grabFirstElFloat(xml, 'Elevation'))
+      .depth(util._grabFirstElFloat(xml, 'Depth'))
+      .azimuth(util._grabFirstElFloat(xml, 'Azimuth'))
+      .dip(util._grabFirstElFloat(xml, 'Dip'))
+      .sampleRate(util._grabFirstElFloat(xml, 'SampleRate'));
+    if (util._grabAttribute(xml, "endDate")) {
+      out.endDate(util._grabAttribute(xml, "endDate"));
     }
     let responseXml = xml.getElementsByTagNameNS(STAML_NS, 'Response');
     if (responseXml && responseXml.length > 0 ) {
@@ -249,7 +416,7 @@ export class StationQuery {
     return out;
   }
 
-  convertToResponse(responseXml) {
+  convertToResponse(responseXml: Element): model.Response {
     let mythis = this;
     let out;
     let inst = responseXml.getElementsByTagNameNS(STAML_NS, 'InstrumentSensitivity');
@@ -258,7 +425,7 @@ export class StationQuery {
     } else {
       // DMC returns empty response element when they know nothing (instead
       // of just leaving it out). Return empty object in this case
-      out = new model.Response(null);
+      out = new model.Response();
     }
     let xmlStages = responseXml.getElementsByTagNameNS(STAML_NS, 'Stage');
     if (xmlStages && xmlStages.length > 0) {
@@ -270,42 +437,45 @@ export class StationQuery {
     return out;
   }
 
-  convertToInstrumentSensitivity(xml) {
-    let sensitivity = this._grabFirstElFloat(xml, 'Value');
-    let frequency = this._grabFirstElFloat(xml, 'Frequency');
-    let inputUnits = this._grabFirstElText(this._grabFirstEl(xml, 'InputUnits'), 'Name');
-    let outputUnits = this._grabFirstElText(this._grabFirstEl(xml, 'OutputUnits'), 'Name');
+  convertToInstrumentSensitivity(xml: Element): model.InstrumentSensitivity {
+    let sensitivity: number = util._grabFirstElFloat(xml, 'Value');
+    let frequency = util._grabFirstElFloat(xml, 'Frequency');
+    let inputUnits = util._grabFirstElText(util._grabFirstEl(xml, 'InputUnits'), 'Name');
+    let outputUnits = util._grabFirstElText(util._grabFirstEl(xml, 'OutputUnits'), 'Name');
     return new model.InstrumentSensitivity(sensitivity, frequency, inputUnits, outputUnits);
   }
 
-  convertToStage(stageXml) {
+  convertToStage(stageXml: Element): model.Stage {
     let mythis = this;
     let subEl = stageXml.firstElementChild;
-    let filter;
-    let description = this._grabFirstElText(stageXml, 'Description');
-    let inputUnits = this._grabFirstElText(this._grabFirstEl(stageXml, 'InputUnits'), 'Name');
-    let outputUnits = this._grabFirstElText(this._grabFirstEl(stageXml, 'OutputUnits'), 'Name');
+    if (! subEl) {
+      throw new Error("Stage element has no child elements");
+    }
+    let filter: model.AbstractFilterType;
+    let description = util._grabFirstElText(stageXml, 'Description');
+    let inputUnits = util._grabFirstElText(util._grabFirstEl(stageXml, 'InputUnits'), 'Name');
+    let outputUnits = util._grabFirstElText(util._grabFirstEl(stageXml, 'OutputUnits'), 'Name');
     if (subEl.localName == 'PolesZeros') {
       filter = new model.PolesZeros(inputUnits, outputUnits);
-      filter.pzTransferFunctionType(this._grabFirstElText(stageXml, 'PzTransferFunctionType'))
-            .normalizationFactor(this._grabFirstElFloat(stageXml, 'NormalizationFactor'))
-            .normalizationFrequency(this._grabFirstElFloat(stageXml, 'NormalizationFrequency'));
+      filter.pzTransferFunctionType(util._grabFirstElText(stageXml, 'PzTransferFunctionType'));
+      filter.normalizationFactor(util._grabFirstElFloat(stageXml, 'NormalizationFactor'));
+      filter.normalizationFrequency(util._grabFirstElFloat(stageXml, 'NormalizationFrequency'));
       let zeros = Array.from(stageXml.getElementsByTagNameNS(STAML_NS, 'Zero'))
           .map(function(zeroEl) {
-            return model.createComplex(mythis._grabFirstElFloat(zeroEl, 'Real'),
-                               mythis._grabFirstElFloat(zeroEl, 'Imaginary'));
+            return model.createComplex(util._grabFirstElFloat(zeroEl, 'Real'),
+                               util._grabFirstElFloat(zeroEl, 'Imaginary'));
           });
       let poles = Array.from(stageXml.getElementsByTagNameNS(STAML_NS, 'Pole'))
           .map(function(poleEl) {
-            return model.createComplex(mythis._grabFirstElFloat(poleEl, 'Real'),
-                               mythis._grabFirstElFloat(poleEl, 'Imaginary'));
+            return model.createComplex(util._grabFirstElFloat(poleEl, 'Real'),
+                               util._grabFirstElFloat(poleEl, 'Imaginary'));
           });
-      filter.zeros(zeros)
-        .poles(poles);
+      filter.zeros(zeros);
+      filter.poles(poles);
     } else if (subEl.localName == 'Coefficients') {
       let coeffXml = subEl;
       filter = new model.CoefficientsFilter(inputUnits, outputUnits);
-      filter.cfTransferFunction(this._grabFirstElText(coeffXml, 'CfTransferFunctionType'));
+      filter.cfTransferFunction(util._grabFirstElText(coeffXml, 'CfTransferFunctionType'));
       filter.numerator(Array.from(coeffXml.getElementsByTagNameNS(STAML_NS, 'Numerator'))
           .map(function(numerEl) {
             return parseFloat(numerEl.textContent);
@@ -319,7 +489,7 @@ export class StationQuery {
     } else if (subEl.localName == 'FIR') {
       let firXml = subEl;
       filter = new model.FIR(inputUnits, outputUnits);
-      filter.symmetry(this._grabFirstElText(firXml, 'Symmetry'));
+      filter.symmetry(util._grabFirstElText(firXml, 'Symmetry'));
       filter.numerator(Array.from(firXml.getElementsByTagNameNS(STAML_NS, 'NumeratorCoefficient'))
           .map(function(numerEl) {
             return parseFloat(numerEl.textContent);
@@ -328,6 +498,7 @@ export class StationQuery {
       throw new Error("Polynomial not supported: ");
     } else if (subEl.localName == 'StageGain') {
       // gain only stage, pick it up below
+      throw new Error("Did not find filter of any type in stage number "+stringify(util._grabAttribute(stageXml, "number")));
     } else {
       throw new Error("Unknown Stage type: "+ subEl.localName);
     }
@@ -336,57 +507,61 @@ export class StationQuery {
       filter.description(description);
     }
     if (stageXml.hasAttribute('name')) {
-      filter.name(stageXml.getAttribute('name'));
+      filter.name(util._grabAttribute(stageXml, 'name'));
     }
-    var decimationXml = this._grabFirstEl(stageXml, 'Decimation');
-    var decimation = null;
+
+    let decimationXml = util._grabFirstEl(stageXml, 'Decimation');
+    let decimation: model.Decimation | null = null;
     if (decimationXml) {
       decimation = this.convertToDecimation(decimationXml);
     }
-    var gainXml = this._grabFirstEl(stageXml, 'StageGain');
-    var gain = null;
+    let gainXml = util._grabFirstEl(stageXml, 'StageGain');
+    let gain = null;
     if (gainXml) {
       gain = this.convertToGain(gainXml);
+    } else {
+      throw new Error("Did not find Gain in stage number "+stringify(util._grabAttribute(stageXml, "number")));
     }
     return new model.Stage(filter, decimation, gain);
   }
 
-  convertToDecimation(decXml) {
+  convertToDecimation(decXml: Element): model.Decimation {
     let out = new model.Decimation();
     return out
-      .inputSampleRate(this._grabFirstElFloat(decXml, 'InputSampleRate'))
-      .factor(this._grabFirstElInt(decXml, 'Factor'))
-      .offset(this._grabFirstElInt(decXml, 'Offset'))
-      .delay(this._grabFirstElFloat(decXml, 'Delay'))
-      .correction(this._grabFirstElFloat(decXml, 'Correction'));
+      .inputSampleRate(util._grabFirstElFloat(decXml, 'InputSampleRate'))
+      .factor(util._grabFirstElInt(decXml, 'Factor'))
+      .offset(util._grabFirstElInt(decXml, 'Offset'))
+      .delay(util._grabFirstElFloat(decXml, 'Delay'))
+      .correction(util._grabFirstElFloat(decXml, 'Correction'));
   }
 
-  convertToGain(gainXml) {
+  convertToGain(gainXml: Element): model.Gain {
     let out = new model.Gain();
     return out
-      .value(this._grabFirstElFloat(gainXml, 'Value'))
-      .frequency(this._grabFirstElFloat(gainXml, 'Frequency'));
+      .value(util._grabFirstElFloat(gainXml, 'Value'))
+      .frequency(util._grabFirstElFloat(gainXml, 'Frequency'));
   }
 
 
-  queryNetworks() {
+  queryNetworks(): Promise<Array<model.Network>> {
     return this.query(LEVEL_NETWORK);
   }
-  queryStations() {
+  queryStations(): Promise<Array<model.Network>> {
     return this.query(LEVEL_STATION);
   }
-  queryChannels() {
+  queryChannels(): Promise<Array<model.Network>> {
     return this.query(LEVEL_CHANNEL);
   }
-  queryResponse() {
+  queryResponse(): Promise<Array<model.Network>> {
     return this.query(LEVEL_RESPONSE);
   }
 
-  query(level) {
+  query(level: string): Promise<Array<model.Network>> {
     if (! LEVELS.includes(level)) {throw new Error("Unknown level: '"+level+"'");}
     let mythis = this;
     return this.queryRawXml(level).then(function(rawXml) {
         let top = rawXml.documentElement;
+        if (! top) {throw new Error("No documentElement in XML");}
         let netArray = top.getElementsByTagNameNS(STAML_NS, "Network");
         let out = [];
         for (let i=0; i<netArray.length; i++) {
@@ -396,7 +571,7 @@ export class StationQuery {
     });
   }
 
-  queryRawXml(level) {
+  queryRawXml(level: string): Promise<Document> {
     let mythis = this;
     let mylevel = level;
     let promise = new RSVP.Promise(function(resolve, reject) {
@@ -416,7 +591,6 @@ export class StationQuery {
         if (this.readyState === this.DONE) {
           if (this.status === 200) {
               let out = new DOMParser().parseFromString(this.response, "text/xml");
-              out.url = url;
               resolve(out);
 //            resolve(this.responseXML);
           } else if (this.status === 204 || (mythis.nodata() && this.status === mythis.nodata())) {
@@ -454,29 +628,32 @@ console.log("204 nodata so return empty xml");
 
       function handler() {
         if (this.readyState === this.DONE) {
-          console.log("handle version: "+mythis.host()+" "+this.status);
-          if (this.status === 200) { resolve(this.response); }
-          else {
-            console.log("Reject version: "+mythis.host()+" "+this.status);reject(this); }
+          console.log("handle version: "+stringify(mythis.host())+" "+this.status);
+          if (this.status === 200) {
+            resolve(this.response);
+          } else {
+            console.log("Reject version: "+stringify(mythis.host())+" "+this.status);
+            reject(this);
+          }
         }
       }
     });
     return promise;
   }
 
-  makeParam(name, val) {
-    return name+"="+encodeURIComponent(val)+"&";
+  makeParam(name: string, val: mixed) {
+    return name+"="+encodeURIComponent(stringify(val))+"&";
   }
 
   formBaseURL() {
     let colon = ":";
-    if (this.protocol().endsWith(colon)) {
+    if (this._protocol.endsWith(colon)) {
       colon = "";
     }
-    return this.protocol()+colon+"//"+this.host()+"/fdsnws/station/"+this.specVersion();
+    return this._protocol+colon+"//"+this._host+"/fdsnws/station/"+stringify(this.specVersion());
   }
 
-  formURL(level) {
+  formURL(level:string) {
     let url = this.formBaseURL()+"/query?";
     if (! level) {throw new Error("level not specified, should be one of network, station, channel, response.");}
     url = url+this.makeParam("level", level);
@@ -484,12 +661,12 @@ console.log("204 nodata so return empty xml");
     if (this._stationCode) { url = url+this.makeParam("sta", this.stationCode());}
     if (this._locationCode) { url = url+this.makeParam("loc", this.locationCode());}
     if (this._channelCode) { url = url+this.makeParam("cha", this.channelCode());}
-    if (this._startTime) { url = url+this.makeParam("starttime", this.toIsoWoZ(this.startTime()));}
-    if (this._endTime) { url = url+this.makeParam("endtime", this.toIsoWoZ(this.endTime()));}
-    if (this._startBefore) { url = url+this.makeParam("startbefore", this.toIsoWoZ(this.startBefore()));}
-    if (this._startAfter) { url = url+this.makeParam("startafter", this.toIsoWoZ(this.startAfter()));}
-    if (this._endBefore) { url = url+this.makeParam("endbefore", this.toIsoWoZ(this.endBefore()));}
-    if (this._endAfter) { url = url+this.makeParam("endafter", this.toIsoWoZ(this.endAfter()));}
+    if (this._startTime) { url = url+this.makeParam("starttime", util.toIsoWoZ(this.startTime()));}
+    if (this._endTime) { url = url+this.makeParam("endtime", util.toIsoWoZ(this.endTime()));}
+    if (this._startBefore) { url = url+this.makeParam("startbefore", util.toIsoWoZ(this.startBefore()));}
+    if (this._startAfter) { url = url+this.makeParam("startafter", util.toIsoWoZ(this.startAfter()));}
+    if (this._endBefore) { url = url+this.makeParam("endbefore", util.toIsoWoZ(this.endBefore()));}
+    if (this._endAfter) { url = url+this.makeParam("endafter", util.toIsoWoZ(this.endAfter()));}
     if (this._minLat) { url = url+this.makeParam("minlat", this.minLat());}
     if (this._maxLat) { url = url+this.makeParam("maxlat", this.maxLat());}
     if (this._minLon) { url = url+this.makeParam("minlon", this.minLon());}
@@ -500,7 +677,7 @@ console.log("204 nodata so return empty xml");
     if (this._maxRadius) { url = url+this.makeParam("maxradius", this.maxRadius());}
     if (this._includeRestricted) { url = url+this.makeParam("includerestricted", this.includeRestricted());}
     if (this._includeAvailability) { url = url+this.makeParam("includeavailability", this.includeAvailability());}
-    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", this.toIsoWoZ(this.updatedAfter()));}
+    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", util.toIsoWoZ(this.updatedAfter()));}
     if (this._matchTimeseries) { url = url+this.makeParam("matchtimeseries", this.matchTimeseries());}
     if (url.endsWith('&') || url.endsWith('?')) {
       url = url.substr(0, url.length-1); // zap last & or ?
@@ -508,48 +685,4 @@ console.log("204 nodata so return empty xml");
     return url;
   }
 
-  // these are similar methods as in seisplotjs-fdsnevent
-  // duplicate here to avoid dependency and diff NS, yes that is dumb...
-
-
-  /** converts to ISO8601 but removes the trailing Z as FDSN web services
-    do not allow that. */
-  toIsoWoZ(date) {
-    let out = date.toISOString();
-    return out.substring(0, out.length-1);
-  }
-
-  _grabFirstEl(xml, tagName) {
-    if ( ! xml) { return null;}
-    let out = xml.getElementsByTagNameNS(STAML_NS, tagName);
-    if (out && out.length > 0) {
-      return out.item(0);
-    } else {
-      return null;
-    }
-  }
-
-  _grabFirstElText(xml, tagName) {
-    let out = this._grabFirstEl(xml, tagName);
-    if (out) {
-      out = out.textContent;
-    }
-    return out;
-  }
-
-  _grabFirstElFloat(xml, tagName) {
-    let out = this._grabFirstElText(xml, tagName);
-    if (out) {
-      out = parseFloat(out);
-    }
-    return out;
-  }
-
-  _grabFirstElInt(xml, tagName) {
-    let out = this._grabFirstElText(xml, tagName);
-    if (out) {
-      out = parseInt(out);
-    }
-    return out;
-  }
 }
