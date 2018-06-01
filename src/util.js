@@ -18,7 +18,7 @@ export function  _toIsoWoZ(date:moment) :string {
 
 export function  _grabFirstEl(xml: Element | null | void, tagName: string) :Element | void {
   if ( ! xml) { return undefined;}
-  let out = xml.getElementsByTagNameNS(BED_NS, tagName);
+  let out = xml.getElementsByTagName(tagName);
   if (out && out.length > 0) {
     return out.item(0);
   } else {
@@ -37,7 +37,7 @@ export function  _grabFirstElText(xml: Element | null | void, tagName: string) :
 export function  _grabFirstElFloat(xml: Element | null | void, tagName: string) :number | void {
   let out = _grabFirstElText(xml, tagName);
   if (out) {
-    out = parseFloat(out);
+    return parseFloat(out);
   }
   return undefined;
 }
