@@ -17,9 +17,6 @@ test( "_grabFirstEl test", () => {
   expect(lat.textContent).toBe("34.2818");
   expect(util._grabFirstElText(sta, LATITUDE)).toBe("34.2818")
   expect(util._grabFirstElFloat(sta, LATITUDE)).toBe(34.2818);
-  let stationQuery = new fdsnstation.StationQuery();
-  let networks = stationQuery.parseRawXml(xml);
-  expect(networks.length).toBe(1);
 });
 
 const rawXML = `<?xml version="1.0" encoding="ISO-8859-1"?>
