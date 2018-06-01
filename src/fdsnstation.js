@@ -560,15 +560,19 @@ export class StationQuery {
     if (! LEVELS.includes(level)) {throw new Error("Unknown level: '"+level+"'");}
     let mythis = this;
     return this.queryRawXml(level).then(function(rawXml) {
-        let top = rawXml.documentElement;
-        if (! top) {throw new Error("No documentElement in XML");}
-        let netArray = top.getElementsByTagNameNS(STAML_NS, "Network");
-        let out = [];
-        for (let i=0; i<netArray.length; i++) {
-          out[i] = mythis.convertToNetwork(netArray.item(i));
-        }
-        return out;
+        return mythis.parseRawXml(rawXml);
     });
+  }
+
+  parseRawXml(rawXml: Document) :Array<model.Network> {
+    let top = rawXml.documentElement;
+    if (! top) {throw new Error("No documentElement in XML");}
+    let netArray = top.getElementsByTagNameNS(STAML_NS, "Network");
+    let out = [];
+    for (let i=0; i<netArray.length; i++) {
+      out[i] = this.convertToNetwork(netArray.item(i));
+    }
+    return out;
   }
 
   queryRawXml(level: string): Promise<Document> {
@@ -650,7 +654,7 @@ console.log("204 nodata so return empty xml");
     if (this._protocol.endsWith(colon)) {
       colon = "";
     }
-    return this._protocol+colon+"//"+this._host+"/fdsnws/station/"+stringify(this.specVersion());
+    return this._protocol+colon+"//"+this._host+"/fdsnws/station/"+this._specVersion;
   }
 
   formURL(level:string) {
