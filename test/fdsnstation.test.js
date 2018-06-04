@@ -19,6 +19,68 @@ test( "channel parse test", () => {
   expect(networks[0].stations()[0].channels().length).toBe(1);
 });
 
+test("form url test", () => {
+  const NET = 'CO';
+  const STA = 'JSC';
+  const LOC = '00';
+  const CHAN = 'HHZ';
+  const START = moment.utc("1990-01-01");
+  const END = moment.utc("2018-01-01");
+  let stationQuery = new fdsnstation.StationQuery();
+  expect(stationQuery.networkCode(NET)).toBe(stationQuery);
+  expect(stationQuery.networkCode()).toBe(NET);
+  expect(stationQuery.stationCode(STA)).toBe(stationQuery);
+  expect(stationQuery.stationCode()).toBe(STA);
+  expect(stationQuery.locationCode(LOC)).toBe(stationQuery);
+  expect(stationQuery.locationCode()).toBe(LOC);
+  expect(stationQuery.channelCode(CHAN)).toBe(stationQuery);
+  expect(stationQuery.channelCode()).toBe(CHAN);
+  expect(stationQuery.startTime(START)).toBe(stationQuery);
+  expect(stationQuery.startTime()).toBe(START);
+  expect(stationQuery.endTime(END)).toBe(stationQuery);
+  expect(stationQuery.endTime()).toBe(END);
+  expect(stationQuery.startBefore(START)).toBe(stationQuery);
+  expect(stationQuery.startBefore()).toBe(START);
+  expect(stationQuery.endBefore(END)).toBe(stationQuery);
+  expect(stationQuery.endBefore()).toBe(END);
+  expect(stationQuery.startAfter(START)).toBe(stationQuery);
+  expect(stationQuery.startAfter()).toBe(START);
+  expect(stationQuery.endAfter(END)).toBe(stationQuery);
+  expect(stationQuery.endAfter()).toBe(END);
+  expect(stationQuery.minLat(12)).toBe(stationQuery);
+  expect(stationQuery.minLat()).toBe(12);
+  expect(stationQuery.maxLat(12)).toBe(stationQuery);
+  expect(stationQuery.maxLat()).toBe(12);
+  expect(stationQuery.minLon(12)).toBe(stationQuery);
+  expect(stationQuery.minLon()).toBe(12);
+  expect(stationQuery.maxLon(12)).toBe(stationQuery);
+  expect(stationQuery.maxLon()).toBe(12);
+  expect(stationQuery.latitude(12)).toBe(stationQuery);
+  expect(stationQuery.latitude()).toBe(12);
+  expect(stationQuery.longitude(12)).toBe(stationQuery);
+  expect(stationQuery.longitude()).toBe(12);
+  expect(stationQuery.minRadius(12)).toBe(stationQuery);
+  expect(stationQuery.minRadius()).toBe(12);
+  expect(stationQuery.maxRadius(12)).toBe(stationQuery);
+  expect(stationQuery.maxRadius()).toBe(12);
+  expect(stationQuery.updatedAfter(END)).toBe(stationQuery);
+  expect(stationQuery.updatedAfter()).toBe(END);
+  expect(stationQuery.matchTimeseries(true)).toBe(stationQuery);
+  expect(stationQuery.matchTimeseries()).toEqual(true);
+  expect(stationQuery.nodata(404)).toBe(stationQuery);
+  expect(stationQuery.nodata()).toEqual(404);
+  expect(fdsnstation.LEVEL_CHANNEL).toBeDefined();
+  const url = stationQuery.formURL(fdsnstation.LEVEL_CHANNEL);
+  expect(url).toBeDefined();
+  for(const k of ['net', 'sta', 'loc', 'cha',
+   'starttime', 'endtime', 'startbefore', 'endbefore', 'startafter', 'endafter',
+   'minlat', 'maxlat', 'minlon', 'maxlon', 'lat', 'lon', 'minradius', 'maxradius',
+   'updatedafter', 'matchtimeseries', 'nodata']) {
+     expect(url).toContain(k);
+   }
+  console.log("query: "+stationQuery.formURL(fdsnstation.LEVEL_CHANNEL));
+});
+
 const RAW_XML_STATION = `<?xml version="1.0" encoding="ISO-8859-1"?>
 
 <FDSNStationXML xmlns="http://www.fdsn.org/xml/station/1" schemaVersion="1.0" xsi:schemaLocation="http://www.fdsn.org/xml/station/1 http://www.fdsn.org/xml/station/fdsn-station-1.0.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:iris="http://www.fdsn.org/xml/station/1/iris">

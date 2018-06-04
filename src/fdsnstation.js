@@ -683,6 +683,7 @@ console.log("204 nodata so return empty xml");
     if (this._includeAvailability) { url = url+this.makeParam("includeavailability", this.includeAvailability());}
     if (this._updatedAfter) { url = url+this.makeParam("updatedafter", model.toIsoWoZ(this.updatedAfter()));}
     if (this._matchTimeseries) { url = url+this.makeParam("matchtimeseries", this.matchTimeseries());}
+    if (this._nodata) { url = url+this.makeParam("nodata", this.nodata());}
     if (url.endsWith('&') || url.endsWith('?')) {
       url = url.substr(0, url.length-1); // zap last & or ?
     }
