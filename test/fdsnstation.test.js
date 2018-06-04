@@ -8,6 +8,7 @@ test( "station parse test", () => {
   let networks = stationQuery.parseRawXml(xml);
   expect(networks.length).toBe(2);
   expect(networks[0].stations.length).toBe(1);
+  expect(networks[0].stations()[0].channels().length).toBe(0);
 });
 
 test( "channel parse test", () => {
@@ -76,8 +77,11 @@ test("form url test", () => {
    'starttime', 'endtime', 'startbefore', 'endbefore', 'startafter', 'endafter',
    'minlat', 'maxlat', 'minlon', 'maxlon', 'lat', 'lon', 'minradius', 'maxradius',
    'updatedafter', 'matchtimeseries', 'nodata']) {
-     expect(url).toContain(k);
+     expect(url).toContain('&'+k+'=');
    }
+   // level is first so no & before
+   expect(url).toContain('level='+fdsnstation.LEVEL_CHANNEL);
+   expect(url).toContain(fdsnstation.IRIS_HOST);
   console.log("query: "+stationQuery.formURL(fdsnstation.LEVEL_CHANNEL));
 });
 
