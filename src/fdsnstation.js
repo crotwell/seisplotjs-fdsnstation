@@ -665,12 +665,12 @@ console.log("204 nodata so return empty xml");
     if (this._stationCode) { url = url+this.makeParam("sta", this.stationCode());}
     if (this._locationCode) { url = url+this.makeParam("loc", this.locationCode());}
     if (this._channelCode) { url = url+this.makeParam("cha", this.channelCode());}
-    if (this._startTime) { url = url+this.makeParam("starttime", util.toIsoWoZ(this.startTime()));}
-    if (this._endTime) { url = url+this.makeParam("endtime", util.toIsoWoZ(this.endTime()));}
-    if (this._startBefore) { url = url+this.makeParam("startbefore", util.toIsoWoZ(this.startBefore()));}
-    if (this._startAfter) { url = url+this.makeParam("startafter", util.toIsoWoZ(this.startAfter()));}
-    if (this._endBefore) { url = url+this.makeParam("endbefore", util.toIsoWoZ(this.endBefore()));}
-    if (this._endAfter) { url = url+this.makeParam("endafter", util.toIsoWoZ(this.endAfter()));}
+    if (this._startTime) { url = url+this.makeParam("starttime", model.toIsoWoZ(this.startTime()));}
+    if (this._endTime) { url = url+this.makeParam("endtime", model.toIsoWoZ(this.endTime()));}
+    if (this._startBefore) { url = url+this.makeParam("startbefore", model.toIsoWoZ(this.startBefore()));}
+    if (this._startAfter) { url = url+this.makeParam("startafter", model.toIsoWoZ(this.startAfter()));}
+    if (this._endBefore) { url = url+this.makeParam("endbefore", model.toIsoWoZ(this.endBefore()));}
+    if (this._endAfter) { url = url+this.makeParam("endafter", model.toIsoWoZ(this.endAfter()));}
     if (this._minLat) { url = url+this.makeParam("minlat", this.minLat());}
     if (this._maxLat) { url = url+this.makeParam("maxlat", this.maxLat());}
     if (this._minLon) { url = url+this.makeParam("minlon", this.minLon());}
@@ -681,7 +681,7 @@ console.log("204 nodata so return empty xml");
     if (this._maxRadius) { url = url+this.makeParam("maxradius", this.maxRadius());}
     if (this._includeRestricted) { url = url+this.makeParam("includerestricted", this.includeRestricted());}
     if (this._includeAvailability) { url = url+this.makeParam("includeavailability", this.includeAvailability());}
-    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", util.toIsoWoZ(this.updatedAfter()));}
+    if (this._updatedAfter) { url = url+this.makeParam("updatedafter", model.toIsoWoZ(this.updatedAfter()));}
     if (this._matchTimeseries) { url = url+this.makeParam("matchtimeseries", this.matchTimeseries());}
     if (url.endsWith('&') || url.endsWith('?')) {
       url = url.substr(0, url.length-1); // zap last & or ?

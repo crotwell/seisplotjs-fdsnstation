@@ -2,10 +2,6 @@
 import * as fdsnstation from '../src/fdsnstation';
 import * as util from '../src/util';
 
-test( "_toIsoWoZ test", () => {
-  const s = "2018-01-01T12:34:45.000";
-  expect(util._toIsoWoZ(fdsnstation.model.moment.utc(s))).toBe(s);
-});
 test( "_grabFirstEl test", () => {
   const LATITUDE = "Latitude";
   const xml = new DOMParser().parseFromString(rawXML, "text/xml");
@@ -14,6 +10,7 @@ test( "_grabFirstEl test", () => {
   let sta = util._grabFirstEl(net, "Station");
   expect(sta).toBeDefined();
   let lat = util._grabFirstEl(sta, LATITUDE);
+  expect(lat).toBeDefined();
   expect(lat.textContent).toBe("34.2818");
   expect(util._grabFirstElText(sta, LATITUDE)).toBe("34.2818")
   expect(util._grabFirstElFloat(sta, LATITUDE)).toBe(34.2818);
