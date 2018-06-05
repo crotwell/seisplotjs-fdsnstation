@@ -68,19 +68,28 @@ test("form url test", () => {
   expect(stationQuery.updatedAfter()).toBe(END);
   expect(stationQuery.matchTimeseries(true)).toBe(stationQuery);
   expect(stationQuery.matchTimeseries()).toEqual(true);
+  expect(stationQuery.includeRestricted(true)).toBe(stationQuery);
+  expect(stationQuery.includeRestricted()).toEqual(true);
+  expect(stationQuery.includeAvailability(true)).toBe(stationQuery);
+  expect(stationQuery.includeAvailability()).toEqual(true);
+  expect(stationQuery.format('xml')).toBe(stationQuery);
+  expect(stationQuery.format()).toEqual('xml');
   expect(stationQuery.nodata(404)).toBe(stationQuery);
   expect(stationQuery.nodata()).toEqual(404);
   expect(fdsnstation.LEVEL_CHANNEL).toBeDefined();
   const url = stationQuery.formURL(fdsnstation.LEVEL_CHANNEL);
   expect(url).toBeDefined();
+  // level is first so no & before
+  expect(url).toContain('?level='+fdsnstation.LEVEL_CHANNEL);
   for(const k of ['net', 'sta', 'loc', 'cha',
-   'starttime', 'endtime', 'startbefore', 'endbefore', 'startafter', 'endafter',
-   'minlat', 'maxlat', 'minlon', 'maxlon', 'lat', 'lon', 'minradius', 'maxradius',
-   'updatedafter', 'matchtimeseries', 'nodata']) {
+    'starttime', 'endtime',
+    'startbefore', 'endbefore', 'startafter', 'endafter',
+    'minlat', 'maxlat', 'minlon', 'maxlon',
+    'lat', 'lon', 'minradius', 'maxradius',
+    'includerestricted', 'includeavailability',
+    'updatedafter', 'matchtimeseries', 'format', 'nodata']) {
      expect(url).toContain('&'+k+'=');
    }
-   // level is first so no & before
-   expect(url).toContain('level='+fdsnstation.LEVEL_CHANNEL);
    expect(url).toContain(fdsnstation.IRIS_HOST);
   console.log("query: "+stationQuery.formURL(fdsnstation.LEVEL_CHANNEL));
 });
