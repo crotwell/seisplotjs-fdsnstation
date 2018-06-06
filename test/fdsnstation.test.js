@@ -91,8 +91,7 @@ test("form url test", () => {
      expect(url).toContain('&'+k+'=');
    }
    expect(url).toContain(fdsnstation.IRIS_HOST);
-  console.log("query: "+stationQuery.formURL(fdsnstation.LEVEL_CHANNEL));
-});
+  });
 
 const RAW_XML_STATION = `<?xml version="1.0" encoding="ISO-8859-1"?>
 
