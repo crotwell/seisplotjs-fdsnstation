@@ -370,9 +370,11 @@ export class StationQuery {
 
   convertToNetwork(xml: Element): model.Network {
     let out = new model.Network(util._grabAttribute(xml, "code"))
-      .startDate(util._grabAttribute(xml, "startDate"))
-      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
-      .description(util._grabFirstElText(xml, 'Description'));
+      .startDate(util._grabAttribute(xml, "startDate"));
+      const rs = util._grabAttribute(xml, "restrictedStatus");
+      if (rs) { out.restrictedStatus(rs); }
+      const desc = util._grabFirstElText(xml, 'Description');
+      if (desc) {out.description(desc);}
     if (util._grabAttribute(xml, "endDate")) {
       out.endDate(util._grabAttribute(xml, "endDate"));
     }
@@ -390,9 +392,10 @@ export class StationQuery {
   }
   convertToStation(network: model.Network, xml: Element): model.Station {
     let out = new model.Station(network, util._grabAttribute(xml, "code"))
-      .startDate(util._grabAttribute(xml, "startDate"))
-      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
-      .latitude(util._grabFirstElFloat(xml, 'Latitude'))
+      .startDate(util._grabAttribute(xml, "startDate"));
+      const rs = util._grabAttribute(xml, "restrictedStatus");
+      if (rs) { out.restrictedStatus(rs); }
+      out.latitude(util._grabFirstElFloat(xml, 'Latitude'))
       .longitude(util._grabFirstElFloat(xml, 'Longitude'))
       .elevation(util._grabFirstElFloat(xml, 'Elevation'))
       .name(util._grabFirstElText(util._grabFirstEl(xml, 'Site'), 'Name'));
@@ -409,9 +412,10 @@ export class StationQuery {
   }
   convertToChannel(station: model.Station, xml: Element): model.Channel {
     let out = new model.Channel(station, util._grabAttribute(xml, "code"), util._grabAttribute(xml, "locationCode"))
-      .startDate(util._grabAttribute(xml, "startDate"))
-      .restrictedStatus(util._grabAttribute(xml, "restrictedStatus"))
-      .latitude(util._grabFirstElFloat(xml, 'Latitude'))
+      .startDate(util._grabAttribute(xml, "startDate"));
+      const rs = util._grabAttribute(xml, "restrictedStatus");
+      if (rs) { out.restrictedStatus(rs); }
+      out.latitude(util._grabFirstElFloat(xml, 'Latitude'))
       .longitude(util._grabFirstElFloat(xml, 'Longitude'))
       .elevation(util._grabFirstElFloat(xml, 'Elevation'))
       .depth(util._grabFirstElFloat(xml, 'Depth'))
