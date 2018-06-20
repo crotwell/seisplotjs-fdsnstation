@@ -199,7 +199,22 @@ var listChannels = function(sta) {
           var sense = nets[0].stations()[0].channels()[0].response().instrumentSensitivity();
           var resp = nets[0].stations()[0].channels()[0].response();
           responseCode.text(sense ? (sense.sensitivity()+" "+sense.outputUnits()+" per "+sense.inputUnits()+" at "+sense.frequency()+" Hz") : "No Sensitivity");
-          responseCode.text("stages: "+resp.stages().length+" "+resp.stages()[0].filter());
+          let stageText = "";
+          let sZero = resp.stages()[0];
+          if (sZero) {
+            let filter = sZero.filter();
+            if (filter) {
+              stageText = "in: "+filter.inputUnits()+" out: "+filter.outputUnits()+" ";
+              if (filter instanceof fdsnstation.model.PolesZeros) {
+                stageText += "PolesZeros: ";
+              } else if (filter instanceof fdsnstation.model.FIR) {
+                stageText += "FIR: ";
+              } else if (filter instanceof fdsnstation.model.CoefficientsFilter) {
+                stageText += "CoefficientsFilter: ";
+              }
+            }
+          }
+          responseCode.text("stages: "+resp.stages().length+" stage 0:"+stageText);
         });
       });
 
