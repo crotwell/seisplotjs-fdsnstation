@@ -1,6 +1,6 @@
 {
   "name": "seisplotjs-fdsnstation",
-  "version": "1.1.1-alpha.1",
+  "version": "1.1.1",
   "description": "Querying and parsing of output of FDSN Station web service for network, station, channel and response metadata.",
   "main": "./lib/fdsnstation.js",
   "dependencies": {
