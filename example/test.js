@@ -197,7 +197,9 @@ var listChannels = function(sta) {
           }
           responseCode.selectAll("*").remove();
           var sense = nets[0].stations()[0].channels()[0].response().instrumentSensitivity();
+          var resp = nets[0].stations()[0].channels()[0].response();
           responseCode.text(sense ? (sense.sensitivity()+" "+sense.outputUnits()+" per "+sense.inputUnits()+" at "+sense.frequency()+" Hz") : "No Sensitivity");
+          responseCode.text("stages: "+resp.stages().length+" "+resp.stages()[0].filter());
         });
       });
 
