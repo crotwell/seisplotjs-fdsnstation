@@ -38,6 +38,15 @@ export function  _grabFirstElFloat(xml: Element | null | void, tagName: string) 
   return out;
 }
 
+export function  _grabFirstElInt(xml: Element | null | void, tagName: string) :number | void {
+  let out = undefined;
+  let elText = _grabFirstElText(xml, tagName);
+  if (_isDef(elText)) {
+    out = parseInt(elText);
+  }
+  return out;
+}
+
 export function  _grabAttribute(xml: Element | null | void, tagName: string) :string | void {
   let out = undefined;
   if (_isDef(xml)) {
