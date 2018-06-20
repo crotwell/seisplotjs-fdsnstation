@@ -467,8 +467,7 @@ export class StationQuery {
     if (! subEl) {
       throw new Error("Stage element has no child elements");
     }
-    let filter: model.AbstractFilterType;
-    let description = util._grabFirstElText(stageXml, 'Description');
+    let filter: model.AbstractFilterType | null = null;
     let inputUnits = util._grabFirstElText(util._grabFirstEl(stageXml, 'InputUnits'), 'Name');
     let outputUnits = util._grabFirstElText(util._grabFirstEl(stageXml, 'OutputUnits'), 'Name');
     if (subEl.localName == 'PolesZeros') {
@@ -514,18 +513,20 @@ export class StationQuery {
       throw new Error("Polynomial not supported: ");
     } else if (subEl.localName == 'StageGain') {
       // gain only stage, pick it up below
-      throw new Error("Did not find filter of any type in stage number "+stringify(util._grabAttribute(stageXml, "number")));
     } else {
       throw new Error("Unknown Stage type: "+ subEl.localName);
     }
-    // add description if it was there
-    if (description) {
-      filter.description(description);
-    }
-    if (stageXml.hasAttribute('name')) {
-      filter.name(util._grabAttribute(stageXml, 'name'));
-    }
 
+    if (filter) {
+      // add description and name if it was there
+      let description = util._grabFirstElText(subEl, 'Description');
+      if (description) {
+        filter.description(description);
+      }
+      if (subEl.hasAttribute('name')) {
+        filter.name(util._grabAttribute(subEl, 'name'));
+      }
+    }
     let decimationXml = util._grabFirstEl(stageXml, 'Decimation');
     let decimation: model.Decimation | null = null;
     if (decimationXml) {
@@ -538,7 +539,9 @@ export class StationQuery {
     } else {
       throw new Error("Did not find Gain in stage number "+stringify(util._grabAttribute(stageXml, "number")));
     }
-    return new model.Stage(filter, decimation, gain);
+    let out = new model.Stage(filter, decimation, gain);
+
+    return out;
   }
 
   convertToDecimation(decXml: Element): model.Decimation {
