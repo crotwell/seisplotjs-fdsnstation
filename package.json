@@ -11,7 +11,7 @@
     "lint": "eslint 'src/*.js'",
     "test": "jest",
     "flow": "flow",
-    "doc": "documentation build src/knownDataCenters.js src/quakeml.js src/stationxml.js src/seismogram.js src/util.js --github -o docs -f html --document-exported ",
+    "doc": "rimraf docs/api_${npm_package_version} && documentation build --config documentation.yml src/knownDataCenters.js src/fdsnstation.js --github -o docs/api_${npm_package_version} -f html --document-exported ",
     "flow-copy": "flow-copy-source -v -i '**/__tests__/**' src lib",
     "build:clean": "rimraf lib",
     "build:compile": "babel --presets=env,flow -d lib/ src/ ",
